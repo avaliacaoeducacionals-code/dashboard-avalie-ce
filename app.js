@@ -5130,8 +5130,6 @@ function goto(page) {
   document.body.classList.toggle("page-rankgeral", page === "rankgeral");
   document.body.classList.toggle("page-linhas", page === "linhas");
   document.body.classList.toggle("page-consulta", page === "consulta");
-  document.body.classList.toggle("page-corretor", page === "corretor");
-  if (page === "corretor" && typeof corretorAoAbrir === "function") corretorAoAbrir();
   const titles = titulosPagina(page);
   $("pageTitle").textContent = titles[0];
   $("pageSubtitle").textContent = titles[1];
@@ -6031,7 +6029,25 @@ if (!DATA) {
   });
   if ($("btnPrintSit")) $("btnPrintSit").addEventListener("click", imprimirSit);
   $("buscaAluno").addEventListener("input", () => renderAlunos(filteredAlunos()));
-  document.querySelectorAll(".nav-btn").forEach((btn) => btn.addEventListener("click", () => goto(btn.dataset.page)));
+  document.querySelectorAll(".nav-btn").forEach((btn) => {
+    if (!btn.dataset.page) return;
+    btn.addEventListener("click", () => goto(btn.dataset.page));
+  });
+  const abrirCorretor = $("abrirCorretor");
+  if (abrirCorretor) {
+    abrirCorretor.addEventListener("click", (ev) => {
+      let janela = null;
+      try {
+        janela = window.open("corretor.html", "avalieCorretor");
+      } catch (e) {
+        janela = null;
+      }
+      if (janela) {
+        ev.preventDefault();
+        try { janela.focus(); } catch (e) { /* o link target=avalieCorretor abre a mesma janela */ }
+      }
+    });
+  }
   const btnComp = $("btnComparar");
   if (btnComp) btnComp.addEventListener("click", () => goto("comparar"));
   const btnRank = $("btnRank");

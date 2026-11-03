@@ -835,9 +835,9 @@
     if (atual().questions.length && atual().students.length) gerarResultados(false);
   };
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", iniciar);
-  } else {
-    iniciar();
+  if (document.getElementById("crAddEscola")) {
+    const subir = document.body.classList.contains("corretor-solo") ? window.corretorAoAbrir : iniciar;
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", subir);
+    else subir();
   }
 })();

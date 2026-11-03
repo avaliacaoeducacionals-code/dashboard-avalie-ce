@@ -158,7 +158,12 @@ body.page-linhas .topbar > .filters,
 body.page-consulta .topbar > .filters,
 body.page-corretor .topbar > .filters { display: none; }
 
-.nav-corretor { border: 1px solid rgba(46, 196, 182, 0.45) !important; }
+a.nav-corretor {
+  display: block;
+  text-decoration: none;
+  border: 1px solid rgba(46, 196, 182, 0.45) !important;
+}
+body.corretor-solo .main { max-width: 1200px; margin: 0 auto; }
 .corretor-anos { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
 .corretor-anos button {
   border: 1px solid var(--line, rgba(255,255,255,.16));
