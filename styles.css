@@ -225,7 +225,9 @@ body.corretor-solo .btn-compare.corretor-excluir:disabled:hover {
 .corretor-card h2 { margin-top: 0; }
 .corretor-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
 #crLancamento .corretor-grid { margin-bottom: 14px; overflow: visible; }
-#crLancamento .corretor-campo-aluno { grid-column: 1 / -1; }
+#crLancamento .corretor-campo-aluno,
+#crAbrirBox .corretor-campo-aluno { grid-column: 1 / -1; }
+#crAbrirAluno { width: 100%; min-width: 100%; max-width: none; }
 #crAluno { width: 100%; min-width: 100%; max-width: none; }
 #crLancamento,
 #crLancamento .corretor-grid,
@@ -351,6 +353,56 @@ html:not([data-tema="dia"]) select option { color: #e8f2f6; background-color: #1
   .corretor-gabarito { grid-template-columns: minmax(0, 1fr); }
 }
 .corretor-escala { display: grid; grid-template-columns: 1.4fr .7fr .7fr auto; gap: 8px; margin-bottom: 8px; align-items: center; }
+.corretor-situacao {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+.corretor-situacao button {
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.16));
+  background: var(--bg-2, #0c2430);
+  color: inherit;
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  filter: none;
+}
+.corretor-situacao button:hover {
+  filter: none;
+  border-color: #2ec4b6;
+}
+.corretor-situacao button[aria-pressed="true"] {
+  background: #2ec4b6;
+  color: #062027;
+  border-color: #2ec4b6;
+}
+.corretor-situacao button:disabled {
+  cursor: not-allowed;
+}
+.corretor-situacao button:disabled:not([aria-pressed="true"]) {
+  background: #6d858c;
+  color: #eef5f7;
+  border-color: #6d858c;
+}
+.corretor-situacao button:disabled[aria-pressed="true"] {
+  background: #2ec4b6;
+  color: #062027;
+  border-color: #2ec4b6;
+}
+.corretor-sit-tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #2ec4b6;
+  color: #062027;
+  font-size: 12px;
+  font-weight: 700;
+  vertical-align: middle;
+}
 .corretor-voz { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
 .corretor-result-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .corretor-matriz td.ok { color: #7bd389; }

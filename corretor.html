@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Corretor por ano · Avalie.CE</title>
+  <title>Eixo de avaliação · Avalie.CE</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet" />
   <script>
     document.documentElement.dataset.tema = localStorage.getItem("avalie-tema") === "dia" ? "dia" : "noite";
   </script>
-  <link rel="stylesheet" href="styles.css?v=finalizar1" />
+  <link rel="stylesheet" href="styles.css?v=abrir1" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
 <body class="corretor-solo">
@@ -21,7 +21,7 @@
           <img class="logo-eixo" src="assets/logo-eixo-avaliacao.png" alt="Eixo de Avaliação" />
         </div>
         <div class="topbar-copy">
-          <h1>Corretor por ano</h1>
+          <h1>Eixo de avaliação</h1>
           <p id="pageSubtitle">Avaliação isolada do 1º ao 9º ano. Escola, disciplina, turma, gabarito e alunos ficam só neste navegador.</p>
         </div>
         <div class="logo-frame">
@@ -36,6 +36,36 @@
 
     <div id="crBanco">
     <p class="hint">Cada ano guarda a própria avaliação neste navegador. No lançamento, o nome é o da escola, do ano e da turma escolhidos. As respostas são números: 1, 2, 3 e 4. Se a questão tiver 5 opções, a quinta é 5. Verdadeiro ou falso continua V e F.</p>
+    <article class="card corretor-card" id="crAbrirBox">
+      <h2>Abrir o resultado</h2>
+      <p class="hint">Aqui é o único lugar para alterar um resultado já salvo. Escolha a escola, o ano, a disciplina, a turma e o aluno. Português e Matemática não se misturam. Se o lançamento da turma estiver finalizado, o resultado continua bloqueado.</p>
+      <div class="corretor-grid">
+        <label>Escola
+          <select id="crAbrirEscola" aria-label="Escola do resultado"></select>
+        </label>
+        <label>Ano
+          <select id="crAbrirAno" aria-label="Ano do resultado"></select>
+        </label>
+        <label>Disciplina
+          <select id="crAbrirDisciplina" aria-label="Disciplina do resultado"></select>
+        </label>
+        <label>Turma
+          <select id="crAbrirTurma" aria-label="Turma do resultado"></select>
+        </label>
+        <label class="corretor-campo-aluno">Aluno
+          <select id="crAbrirAluno" aria-label="Aluno do resultado"></select>
+        </label>
+      </div>
+      <p class="corretor-finalizado" id="crAbrirFechado" role="status" hidden>Lançamento finalizado. As respostas desta turma não podem mais ser alteradas.</p>
+      <p class="hint" id="crAbrirStatus" aria-live="polite"></p>
+      <div class="corretor-situacao" id="crAbrirSituacao" role="group" aria-label="Situação do resultado">
+        <button type="button" data-sit="N.D" aria-pressed="false">N.D</button>
+        <button type="button" data-sit="Falta" aria-pressed="false">Falta</button>
+        <button type="button" data-sit="Transferência" aria-pressed="false">Transferência</button>
+      </div>
+      <div class="corretor-gabarito" id="crAbrirRespostas"></div>
+      <button type="button" id="crAbrirSalvar" class="btn-compare" disabled>Salvar alteração</button>
+    </article>
     <article class="card corretor-card">
       <h2>Escolas cadastradas</h2>
       <p class="hint">Cadastro único deste navegador. As escolas da rede já entram nesta lista. Escolha, em cada ano, qual escola fez a avaliação.</p>
@@ -135,6 +165,12 @@
           <select id="crAluno" aria-label="Nome do aluno"></select>
         </label>
       </div>
+      <div class="corretor-situacao" id="crSituacao" role="group" aria-label="Situação do aluno">
+        <button type="button" data-sit="N.D" aria-pressed="false">N.D</button>
+        <button type="button" data-sit="Falta" aria-pressed="false">Falta</button>
+        <button type="button" data-sit="Transferência" aria-pressed="false">Transferência</button>
+      </div>
+      <p class="hint" id="crLancamentoTrava" hidden></p>
       <p class="hint" id="crSemGabarito" hidden>Este ano ainda não tem gabarito. Volte ao banco para configurar as questões.</p>
       <div class="corretor-voz">
         <button type="button" id="crVozIniciar" class="btn-compare">Ditar</button>
@@ -206,6 +242,6 @@
   <script src="habilidades.js?v=descritores1"></script>
   <script src="dados_rede.js?v=rede1"></script>
   <script src="dados_nominal.js?v=nomes1"></script>
-  <script src="corretor.js?v=finalizar1"></script>
+  <script src="corretor.js?v=abrir1"></script>
 </body>
 </html>
