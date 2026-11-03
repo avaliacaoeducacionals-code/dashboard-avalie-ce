@@ -156,15 +156,99 @@
     }));
   }
 
+  function descritoresAtuais() {
+    const hab = window.HAB_NOMES;
+    if (!hab) return null;
+    const nome = nomeDisciplina(atual().disciplinaId);
+    const mapa = hab[anoAtual + "|" + nome];
+    if (!mapa || typeof mapa !== "object") return null;
+    return mapa;
+  }
+
+  function textoDescritor(q) {
+    const mapa = descritoresAtuais();
+    if (q && q.descriptor && mapa && mapa[q.descriptor]) return mapa[q.descriptor];
+    return (q && q.descriptorText) || "";
+  }
+
+  function lerDescritorDoCard(node) {
+    const sel = node.querySelector(".cr-desc");
+    const codigoLivre = node.querySelector(".cr-desc-codigo");
+    const textoLivre = node.querySelector(".cr-desc-texto");
+    const p = node.querySelector(".corretor-desc");
+    if (sel && sel.value && sel.value !== "__outro__") {
+      return {
+        descriptor: sel.value,
+        descriptorText: p ? p.textContent.trim() : "",
+      };
+    }
+    const codigo = codigoLivre ? codigoLivre.value.trim().toUpperCase() : "";
+    return {
+      descriptor: codigo,
+      descriptorText: textoLivre ? textoLivre.value.trim() : "",
+    };
+  }
+
+  function htmlDescritor(q, i) {
+    const mapa = descritoresAtuais();
+    const cod = String((q && q.descriptor) || "").trim().toUpperCase();
+    const textoSalvo = (q && q.descriptorText) || "";
+    if (!mapa) {
+      return `
+        <span class="corretor-desc-rotulo">Descritor</span>
+        <input class="cr-desc-codigo" type="text" value="${esc(cod)}" placeholder="Ex.: D04" aria-label="Código do descritor da questão ${i + 1}" />
+        <textarea class="cr-desc-texto" rows="3" placeholder="O que este descritor cobra" aria-label="Texto do descritor da questão ${i + 1}" title="${esc(textoSalvo)}">${esc(textoSalvo)}</textarea>
+      `;
+    }
+    const codes = Object.keys(mapa);
+    const conhecido = codes.includes(cod);
+    const outro = !!cod && !conhecido;
+    const texto = conhecido ? mapa[cod] : "";
+    const options = [`<option value="">Sem descritor</option>`]
+      .concat(codes.map((c) => `<option value="${esc(c)}"${c === cod ? " selected" : ""}>${esc(c)}</option>`))
+      .concat([`<option value="__outro__"${outro ? " selected" : ""}>Outro</option>`]);
+    return `
+      <span class="corretor-desc-rotulo">Descritor</span>
+      <select class="cr-desc" aria-label="Descritor da questão ${i + 1}">${options.join("")}</select>
+      <div class="cr-desc-livre"${outro ? "" : " hidden"}>
+        <input class="cr-desc-codigo" type="text" value="${esc(outro ? cod : "")}" placeholder="Código" aria-label="Código livre da questão ${i + 1}" />
+        <textarea class="cr-desc-texto" rows="3" placeholder="O que este descritor cobra" aria-label="Texto livre da questão ${i + 1}" title="${esc(outro ? textoSalvo : "")}">${esc(outro ? textoSalvo : "")}</textarea>
+      </div>
+      <p class="corretor-desc"${outro ? " hidden" : ""} title="${esc(texto)}">${esc(texto || "Escolha o descritor para ver a habilidade.")}</p>
+    `;
+  }
+
+  function atualizarTextoDescritor(card) {
+    if (!card) return;
+    const sel = card.querySelector(".cr-desc");
+    const livre = card.querySelector(".cr-desc-livre");
+    const p = card.querySelector(".corretor-desc");
+    const mapa = descritoresAtuais();
+    if (!sel || !mapa) return;
+    if (sel.value === "__outro__") {
+      if (livre) livre.hidden = false;
+      if (p) p.hidden = true;
+      return;
+    }
+    if (livre) livre.hidden = true;
+    if (p) p.hidden = false;
+    const texto = sel.value ? (mapa[sel.value] || "") : "";
+    if (p) {
+      p.textContent = texto || "Escolha o descritor para ver a habilidade.";
+      p.title = texto;
+    }
+  }
+
   function lerQuestoesDoDom() {
     const nodes = [...document.querySelectorAll("#crGabarito .corretor-q")];
-    return nodes.map((node, i) => {
+    return nodes.map((node) => {
       const tipo = node.querySelector(".cr-tipo").value;
       const op = opcoesTipo(tipo);
       let correta = node.querySelector(".cr-correta").value;
       if (!op.includes(correta)) correta = op[0];
-      return { type: tipo, correct: correta, i };
-    }).map(({ type, correct }) => ({ type, correct }));
+      const desc = lerDescritorDoCard(node);
+      return { type: tipo, correct: correta, descriptor: desc.descriptor, descriptorText: desc.descriptorText };
+    });
   }
 
   function gravarFormulario() {
@@ -311,13 +395,24 @@
             <option value="5"${tipo === "5" ? " selected" : ""}>5 opções</option>
             <option value="2"${tipo === "2" ? " selected" : ""}>V/F</option>
           </select>
+          ${htmlDescritor(q, i)}
         </div>
       `;
     }).join("");
     $("crLancamento").hidden = false;
     const aviso = $("crSemGabarito");
     if (aviso) aviso.hidden = qs.length > 0;
-    if (qs.length) pintarRespostas();
+    const respostas = document.querySelectorAll("#crRespostas .corretor-q").length;
+    if (!qs.length) return;
+    if (respostas === qs.length) {
+      const atuais = qs.map((_, i) => {
+        const el = $("crResp" + i);
+        return el ? el.value : "-";
+      });
+      pintarRespostas(atuais);
+    } else {
+      pintarRespostas();
+    }
   }
 
   function pintarRespostas(valores) {
@@ -326,9 +421,12 @@
     box.innerHTML = qs.map((q, i) => {
       const op = opcoesTipo(q.type);
       const valor = valores && valores[i] ? valores[i] : "-";
+      const texto = textoDescritor(q);
+      const codigo = q.descriptor ? ` · ${esc(q.descriptor)}` : "";
       return `
         <div class="corretor-q">
-          <strong>Q${i + 1}</strong>
+          <strong>Q${i + 1}${codigo}</strong>
+          <p class="corretor-desc" title="${esc(texto)}">${esc(texto)}</p>
           ${selectHtml("crResp" + i, valor, op, true)}
         </div>
       `;
@@ -825,7 +923,13 @@
 
     let head = "<thead><tr><th>Estudante</th>";
     qs.forEach((_, i) => { head += `<th>${i + 1}</th>`; });
-    head += "<th>Acertos</th><th>%</th><th>Nível</th></tr></thead>";
+    head += "<th>Acertos</th><th>%</th><th>Nível</th></tr><tr><th>Descritor</th>";
+    qs.forEach((q) => {
+      const cod = q.descriptor ? esc(q.descriptor) : "—";
+      const texto = textoDescritor(q);
+      head += `<th title="${esc(texto)}">${cod}${texto ? `<span class="cr-th-desc">${esc(texto)}</span>` : ""}</th>`;
+    });
+    head += "<th></th><th></th><th></th></tr></thead>";
 
     let body = "<tbody>";
     alunos.forEach((aluno) => {
@@ -885,7 +989,7 @@
       type: "bar",
       plugins: plugin,
       data: {
-        labels: qs.map((_, i) => "Q" + (i + 1)),
+        labels: qs.map((q, i) => "Q" + (i + 1) + (q.descriptor ? " " + q.descriptor : "")),
         datasets: [{ label: "% de acerto", data: perc, backgroundColor: "#2ec4b6", borderRadius: 4 }],
       },
       options: {
@@ -1098,7 +1202,13 @@
       if (btn) selecionarAno(btn.dataset.ano);
     });
     $("crEscola").addEventListener("change", () => { gravarFormulario(); salvar(); espelharContextoNoLancamento(); });
-    $("crDisciplina").addEventListener("change", () => { gravarFormulario(); salvar(); espelharContextoNoLancamento(); });
+    $("crDisciplina").addEventListener("change", () => {
+      gravarFormulario();
+      pintarGabarito();
+      gravarFormulario();
+      salvar();
+      espelharContextoNoLancamento();
+    });
     $("crTurma").addEventListener("change", () => { gravarFormulario(); salvar(); espelharContextoNoLancamento(); });
     ["crNome", "crData", "crMatriculados", "crNQuest"].forEach((id) => {
       $(id).addEventListener("change", () => { gravarFormulario(); salvar(); });
@@ -1128,8 +1238,16 @@
         correta.innerHTML = op.map((item) => `<option value="${item}">${item}</option>`).join("");
         correta.value = valor;
       }
+      if (ev.target.classList.contains("cr-desc")) atualizarTextoDescritor(ev.target.closest(".corretor-q"));
       gravarFormulario();
       salvar();
+      if (ev.target.classList.contains("cr-desc") || ev.target.classList.contains("cr-desc-codigo") || ev.target.classList.contains("cr-desc-texto")) {
+        const atuais = atual().questions.map((_, i) => {
+          const el = $("crResp" + i);
+          return el ? el.value : "-";
+        });
+        pintarRespostas(atuais);
+      }
     });
     $("crSalvarGabarito").addEventListener("click", salvarGabarito);
     $("crVoltarBanco").addEventListener("click", mostrarBanco);
@@ -1138,6 +1256,10 @@
       $(id).addEventListener("change", () => {
         sincronizarLancamentoParaAno();
         gravarFormulario();
+        if (id === "crLancDisciplina") {
+          pintarGabarito();
+          gravarFormulario();
+        }
         salvar();
       });
     });

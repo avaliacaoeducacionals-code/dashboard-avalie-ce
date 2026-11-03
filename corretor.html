@@ -10,7 +10,7 @@
   <script>
     document.documentElement.dataset.tema = localStorage.getItem("avalie-tema") === "dia" ? "dia" : "noite";
   </script>
-  <link rel="stylesheet" href="styles.css?v=lancamento6" />
+  <link rel="stylesheet" href="styles.css?v=descritores1" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
 <body class="corretor-solo">
@@ -107,7 +107,7 @@
     <p><button type="button" id="crConfigurar" class="btn-compare">Configurar questões e gabarito</button></p>
     <article class="card corretor-card" id="crGabaritoBox">
       <h2>3. Gabarito oficial</h2>
-      <p class="hint">1 = primeira opção, 2 = segunda, 3 = terceira, 4 = quarta. A quinta opção, quando existir, é 5.</p>
+      <p class="hint">1 = primeira opção, 2 = segunda, 3 = terceira, 4 = quarta. A quinta opção, quando existir, é 5. Em cada questão, escolha o descritor e veja a habilidade cobrada.</p>
       <div class="corretor-gabarito" id="crGabarito"></div>
       <button type="button" id="crSalvarGabarito" class="btn-compare">Salvar gabarito</button>
     </article>
@@ -198,6 +198,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="corretor.js?v=alunos1"></script>
+  <script src="habilidades.js?v=descritores1"></script>
+  <script src="corretor.js?v=descritores1"></script>
 </body>
 </html>
