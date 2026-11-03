@@ -22,7 +22,7 @@
         </div>
         <div class="topbar-copy">
           <h1>Corretor por ano</h1>
-          <p id="pageSubtitle">Avaliação isolada do 1º ao 9º ano. Escola, disciplina, gabarito e alunos ficam só neste navegador.</p>
+          <p id="pageSubtitle">Avaliação isolada do 1º ao 9º ano. Escola, disciplina, turma, gabarito e alunos ficam só neste navegador.</p>
         </div>
         <div class="logo-frame">
           <img class="logo-saep" src="assets/logo-saep.png" alt="SAEP — Sistema de Avaliação Educacional de Pacajus" />
@@ -35,7 +35,7 @@
     </header>
 
     <div id="crBanco">
-    <p class="hint">Cada ano guarda a própria avaliação neste navegador. As listas de escolas e de disciplinas valem para todos os anos. Nomes de alunos, gabarito, escolas e disciplinas não são enviados ao GitHub. As respostas são números: 1, 2, 3 e 4. Se a questão tiver 5 opções, a quinta é 5. Verdadeiro ou falso continua V e F.</p>
+    <p class="hint">Cada ano guarda a própria avaliação neste navegador. As listas de escolas, de disciplinas e de turmas valem para todos os anos. Nomes de alunos, gabarito, escolas, disciplinas e turmas não são enviados ao GitHub. As respostas são números: 1, 2, 3 e 4. Se a questão tiver 5 opções, a quinta é 5. Verdadeiro ou falso continua V e F.</p>
     <article class="card corretor-card">
       <h2>Escolas cadastradas</h2>
       <p class="hint">Cadastro único deste navegador. Escolha, em cada ano, qual escola fez a avaliação.</p>
@@ -54,6 +54,15 @@
       </div>
       <ul id="crDisciplinasLista" class="corretor-escolas"></ul>
     </article>
+    <article class="card corretor-card">
+      <h2>Turmas cadastradas</h2>
+      <p class="hint">Cadastro único deste navegador. Cadastre as turmas que for usar, como 1A, 1B ou 9º A. Escolha, em cada ano, a turma da avaliação.</p>
+      <div class="corretor-escola-add">
+        <input id="crNovaTurma" type="text" placeholder="Nome da turma" aria-label="Nome da turma para cadastrar" />
+        <button type="button" id="crAddTurma" class="btn-compare">Adicionar turma</button>
+      </div>
+      <ul id="crTurmasLista" class="corretor-escolas"></ul>
+    </article>
     <div class="corretor-anos" id="corretorAnos" role="tablist" aria-label="Ano da avaliação"></div>
     <article class="card corretor-card">
       <h2>1. Dados da avaliação</h2>
@@ -63,6 +72,9 @@
         </label>
         <label>Disciplina da avaliação
           <select id="crDisciplina" aria-label="Disciplina da avaliação deste ano"></select>
+        </label>
+        <label>Turma da avaliação
+          <select id="crTurma" aria-label="Turma da avaliação deste ano"></select>
         </label>
         <label>Nome da avaliação
           <input id="crNome" type="text" placeholder="Ex.: Avaliação de Matemática" />
@@ -163,6 +175,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="corretor.js"></script>
+  <script src="corretor.js?v=turmas1"></script>
 </body>
 </html>

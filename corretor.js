@@ -42,6 +42,7 @@
     return {
       escolaId: "",
       disciplinaId: "",
+      turmaId: "",
       nome: "",
       data: "",
       matriculados: "",
@@ -59,7 +60,7 @@
   function packVazio() {
     const anos = {};
     ANOS.forEach((a) => { anos[a] = anoVazio(); });
-    return { escolas: [], disciplinas: disciplinasPadrao(), anos };
+    return { escolas: [], disciplinas: disciplinasPadrao(), turmas: [], anos };
   }
 
   function carregar() {
@@ -72,6 +73,12 @@
       if (Array.isArray(data.disciplinas)) {
         base.disciplinas = data.disciplinas.filter((d) => d && d.id && d.nome);
       }
+      base.turmas = Array.isArray(data.turmas)
+        ? data.turmas
+          .filter((t) => t && t.id && t.nome)
+          .map((t) => ({ id: String(t.id), nome: normalizarTurma(t.nome) }))
+          .filter((t) => t.nome)
+        : [];
       ANOS.forEach((a) => {
         const salvo = data.anos && data.anos[a];
         if (salvo && typeof salvo === "object") base.anos[a] = { ...anoVazio(), ...salvo };
@@ -98,6 +105,24 @@
   function nomeDisciplina(id) {
     const hit = pack.disciplinas.find((d) => d.id === id);
     return hit ? hit.nome : "";
+  }
+
+  function normalizarTurma(nome) {
+    return String(nome || "").replace(/\s+/g, " ").trim().toLocaleUpperCase("pt-BR");
+  }
+
+  function nomeTurma(id) {
+    const hit = (pack.turmas || []).find((t) => t.id === id);
+    return hit ? hit.nome : "";
+  }
+
+  function identificacao() {
+    const a = atual();
+    return {
+      escola: nomeEscola(a.escolaId) || "Escola não escolhida",
+      disciplina: nomeDisciplina(a.disciplinaId) || "Disciplina não escolhida",
+      turma: nomeTurma(a.turmaId) || "Turma não escolhida",
+    };
   }
 
   function opcoesTipo(tipo) {
@@ -138,6 +163,8 @@
     if (escola) a.escolaId = escola.value;
     const disciplina = $("crDisciplina");
     if (disciplina) a.disciplinaId = disciplina.value;
+    const turma = $("crTurma");
+    if (turma) a.turmaId = turma.value;
     if ($("crNome")) a.nome = $("crNome").value.trim();
     if ($("crData")) a.data = $("crData").value;
     if ($("crMatriculados")) a.matriculados = $("crMatriculados").value;
@@ -213,6 +240,28 @@
     `).join("");
     sel.value = pack.disciplinas.some((d) => d.id === id) ? id : "";
     atual().disciplinaId = sel.value;
+  }
+
+  function pintarTurmas() {
+    const ul = $("crTurmasLista");
+    const turmas = pack.turmas || [];
+    if (!turmas.length) {
+      ul.innerHTML = "<li><span>Nenhuma turma cadastrada.</span></li>";
+    } else {
+      ul.innerHTML = turmas.map((t) => `
+        <li>
+          <span>${esc(t.nome)}</span>
+          <button type="button" class="btn-compare corretor-excluir" data-del-turma="${esc(t.id)}">Excluir</button>
+        </li>
+      `).join("");
+    }
+    const sel = $("crTurma");
+    const id = atual().turmaId || "";
+    sel.innerHTML = `<option value="">Selecione a turma</option>` + turmas.map((t) => `
+      <option value="${esc(t.id)}">${esc(t.nome)}</option>
+    `).join("");
+    sel.value = turmas.some((t) => t.id === id) ? id : "";
+    atual().turmaId = sel.value;
   }
 
   function pintarCampos() {
@@ -296,6 +345,7 @@
     pintarAbas();
     pintarEscolas();
     pintarDisciplinas();
+    pintarTurmas();
     pintarCampos();
     pintarEscalas();
     pintarGabarito();
@@ -328,10 +378,8 @@
   }
 
   function mostrarAplicacao() {
-    const a = atual();
-    const escola = nomeEscola(a.escolaId) || "Escola não escolhida";
-    const disciplina = nomeDisciplina(a.disciplinaId) || "Disciplina não escolhida";
-    $("crAplicacaoContexto").textContent = `${anoAtual} ano · ${escola} · ${disciplina}`;
+    const info = identificacao();
+    $("crAplicacaoContexto").textContent = `${anoAtual} ano · ${info.escola} · ${info.turma} · ${info.disciplina}`;
     $("crBanco").hidden = true;
     $("crAplicacao").hidden = false;
     $("crLancamento").hidden = false;
@@ -410,6 +458,44 @@
     pack.disciplinas = pack.disciplinas.filter((d) => d.id !== id);
     salvar();
     pintarDisciplinas();
+  }
+
+  function adicionarTurma() {
+    const nome = normalizarTurma($("crNovaTurma").value);
+    if (!nome) {
+      $("crNovaTurma").focus();
+      return;
+    }
+    const repetida = pack.turmas.some((t) => t.nome.localeCompare(nome, "pt-BR", { sensitivity: "accent" }) === 0);
+    if (repetida) {
+      alert("Essa turma já está cadastrada.");
+      return;
+    }
+    gravarFormulario();
+    pack.turmas.push({
+      id: "t" + Date.now().toString(36) + Math.floor(Math.random() * 1000).toString(36),
+      nome,
+    });
+    pack.turmas.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR", { numeric: true }));
+    $("crNovaTurma").value = "";
+    salvar();
+    pintarTurmas();
+  }
+
+  function excluirTurma(id) {
+    const turma = pack.turmas.find((t) => t.id === id);
+    if (!turma) return;
+    const uso = ANOS.filter((ano) => pack.anos[ano].turmaId === id);
+    if (uso.length) {
+      const onde = uso.map((ano) => ano + " ano").join(", ");
+      const segue = confirm(`${turma.nome} está escolhida no ${onde}. A seleção será limpa nesses anos. Alunos e gabarito permanecem. Excluir a turma?`);
+      if (!segue) return;
+    }
+    gravarFormulario();
+    uso.forEach((ano) => { pack.anos[ano].turmaId = ""; });
+    pack.turmas = pack.turmas.filter((t) => t.id !== id);
+    salvar();
+    pintarTurmas();
   }
 
   function selecionarAno(ano) {
@@ -535,10 +621,9 @@
     const mediana = ordenadas.length % 2 ? ordenadas[meio] : (ordenadas[meio - 1] + ordenadas[meio]) / 2;
     const variancia = notas.reduce((s, n) => s + (n - media) ** 2, 0) / notas.length;
     const desvio = Math.sqrt(variancia);
-    const escola = nomeEscola(a.escolaId) || "Escola não escolhida";
-    const disciplina = nomeDisciplina(a.disciplinaId) || "Disciplina não escolhida";
-    $("crTituloResultado").textContent = `Resultado — ${anoAtual} ano — ${disciplina}`;
-    $("crMetaResultado").textContent = `${escola} · ${disciplina} · ${a.nome || "Avaliação sem nome"}${a.data ? " · " + a.data : ""}`;
+    const info = identificacao();
+    $("crTituloResultado").textContent = `Resultado — ${anoAtual} ano — ${info.escola} — ${info.turma} — ${info.disciplina}`;
+    $("crMetaResultado").textContent = `${info.escola} · ${info.turma} · ${info.disciplina} · ${a.nome || "Avaliação sem nome"}${a.data ? " · " + a.data : ""}`;
     $("crKpis").innerHTML = `
       <div class="kpi"><span>Presentes</span><strong>${presentes}</strong></div>
       <div class="kpi"><span>Ausência</span><strong>${ausencia.toFixed(1)}%</strong></div>
@@ -693,19 +778,22 @@
       const largura = pdf.internal.pageSize.getWidth();
       const altura = pdf.internal.pageSize.getHeight();
       const a = atual();
-      const escola = nomeEscola(a.escolaId) || "Escola não escolhida";
-      const disciplina = nomeDisciplina(a.disciplinaId) || "Disciplina não escolhida";
+      const info = identificacao();
       pdf.setFontSize(16);
-      pdf.text(`Corretor — ${anoAtual} ano — ${disciplina}`, 24, 28);
+      const tituloPdf = pdf.splitTextToSize(`Corretor — ${anoAtual} ano — ${info.escola} — ${info.turma} — ${info.disciplina}`, largura - 48);
+      pdf.text(tituloPdf, 24, 28);
       pdf.setFontSize(11);
-      pdf.text(`${escola}  ·  ${disciplina}  ·  ${a.nome || "Avaliação sem nome"}`, 24, 46);
+      const subPdf = pdf.splitTextToSize(`${info.escola}  ·  ${info.turma}  ·  ${info.disciplina}  ·  ${a.nome || "Avaliação sem nome"}`, largura - 48);
+      const ySub = 28 + tituloPdf.length * 18;
+      pdf.text(subPdf, 24, ySub);
+      const yImg = ySub + subPdf.length * 14 + 12;
       const h1 = ((largura - 48) * topo.height) / topo.width;
-      pdf.addImage(topo.toDataURL("image/png"), "PNG", 24, 60, largura - 48, h1);
+      pdf.addImage(topo.toDataURL("image/png"), "PNG", 24, yImg, largura - 48, h1);
       const h2 = ((largura - 48) * tabela.height) / tabela.width;
       const altPagina = Math.max(altura, h2 + 36);
       pdf.addPage([largura, altPagina], "l");
       pdf.addImage(tabela.toDataURL("image/png"), "PNG", 24, 18, largura - 48, h2);
-      const arquivo = `Corretor_${anoAtual.replace("º", "ano")}_${escola}_${disciplina}`.replace(/[^\w\-]+/g, "_");
+      const arquivo = `Corretor_${anoAtual.replace("º", "ano")}_${info.escola}_${info.turma}_${info.disciplina}`.replace(/[^\w\-]+/g, "_");
       pdf.save(arquivo + ".pdf");
     } catch (e) {
       alert("Não foi possível gerar o PDF neste navegador.");
@@ -815,12 +903,21 @@
       const btn = ev.target.closest("[data-del-disciplina]");
       if (btn) excluirDisciplina(btn.dataset.delDisciplina);
     });
+    $("crAddTurma").addEventListener("click", adicionarTurma);
+    $("crNovaTurma").addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter") adicionarTurma();
+    });
+    $("crTurmasLista").addEventListener("click", (ev) => {
+      const btn = ev.target.closest("[data-del-turma]");
+      if (btn) excluirTurma(btn.dataset.delTurma);
+    });
     $("corretorAnos").addEventListener("click", (ev) => {
       const btn = ev.target.closest("[data-ano]");
       if (btn) selecionarAno(btn.dataset.ano);
     });
     $("crEscola").addEventListener("change", () => { gravarFormulario(); salvar(); });
     $("crDisciplina").addEventListener("change", () => { gravarFormulario(); salvar(); });
+    $("crTurma").addEventListener("change", () => { gravarFormulario(); salvar(); });
     ["crNome", "crData", "crMatriculados", "crNQuest"].forEach((id) => {
       $(id).addEventListener("change", () => { gravarFormulario(); salvar(); });
     });
