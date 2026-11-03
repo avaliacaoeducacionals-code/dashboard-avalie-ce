@@ -199,6 +199,19 @@ body.corretor-solo .btn-compare.corretor-excluir:hover {
 .corretor-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
 .corretor-grid label, .corretor-card > label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
 .corretor-gabarito { display: grid; grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 10px; margin: 12px 0; }
+#crGabarito.corretor-gabarito {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 196px), 1fr));
+  gap: 12px;
+}
+#crGabarito .corretor-q {
+  min-width: 0;
+}
+#crGabarito .corretor-q select {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  padding: 8px 2.6rem 8px 10px;
+}
 .corretor-q {
   border: 1px solid var(--line, rgba(255,255,255,.12));
   border-radius: 8px;
