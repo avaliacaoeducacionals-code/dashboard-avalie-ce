@@ -34,6 +34,7 @@
       </div>
     </header>
 
+    <div id="crBanco">
     <p class="hint">Cada ano guarda a própria avaliação neste navegador. As listas de escolas e de disciplinas valem para todos os anos. Nomes de alunos, gabarito, escolas e disciplinas não são enviados ao GitHub. As respostas são números: 1, 2, 3 e 4. Se a questão tiver 5 opções, a quinta é 5. Verdadeiro ou falso continua V e F.</p>
     <article class="card corretor-card">
       <h2>Escolas cadastradas</h2>
@@ -89,7 +90,14 @@
       <div class="corretor-gabarito" id="crGabarito"></div>
       <button type="button" id="crSalvarGabarito" class="btn-compare">Salvar gabarito</button>
     </article>
-    <article class="card corretor-card" id="crLancamento" hidden>
+    <p class="corretor-acoes"><button type="button" id="crRealizar" class="btn-compare">Realizar a avaliação</button></p>
+    </div>
+    <div id="crAplicacao" hidden>
+    <p class="corretor-acoes">
+      <button type="button" id="crVoltarBanco" class="btn-compare">Voltar ao banco de dados</button>
+    </p>
+    <p class="hint" id="crAplicacaoContexto"></p>
+    <article class="card corretor-card" id="crLancamento">
       <h2>4. Lançamento das respostas</h2>
       <label>Nome do aluno
         <input id="crAluno" type="text" placeholder="Nome completo" />
@@ -136,6 +144,7 @@
           <table class="corretor-matriz" id="crMatriz"></table>
         </div>
       </article>
+    </div>
     </div>
   </main>
   <script>

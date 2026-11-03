@@ -181,7 +181,7 @@
       ul.innerHTML = pack.escolas.map((e) => `
         <li>
           <span>${esc(e.nome)}</span>
-          <button type="button" class="btn-compare" data-del-escola="${esc(e.id)}">Excluir</button>
+          <button type="button" class="btn-compare corretor-excluir" data-del-escola="${esc(e.id)}">Excluir</button>
         </li>
       `).join("");
     }
@@ -202,7 +202,7 @@
       ul.innerHTML = pack.disciplinas.map((d) => `
         <li>
           <span>${esc(d.nome)}</span>
-          <button type="button" class="btn-compare" data-del-disciplina="${esc(d.id)}">Excluir</button>
+          <button type="button" class="btn-compare corretor-excluir" data-del-disciplina="${esc(d.id)}">Excluir</button>
         </li>
       `).join("");
     }
@@ -231,7 +231,7 @@
         <input class="cr-nome" type="text" value="${esc(s.nome)}" placeholder="Nome do nível" />
         <input class="cr-min" type="number" min="0" max="100" value="${Number.isFinite(Number(s.min)) ? s.min : 0}" aria-label="Percentual mínimo" />
         <input class="cr-max" type="number" min="0" max="100" value="${Number.isFinite(Number(s.max)) ? s.max : 0}" aria-label="Percentual máximo" />
-        <button type="button" class="btn-compare cr-remover-escala">Excluir</button>
+        <button type="button" class="btn-compare corretor-excluir cr-remover-escala">Excluir</button>
       </div>
     `).join("");
   }
@@ -284,7 +284,7 @@
         <td>${esc((s.answers || []).join(" "))}</td>
         <td>
           <button type="button" class="btn-compare" data-edit-aluno="${i}">Editar</button>
-          <button type="button" class="btn-compare" data-del-aluno="${i}">Excluir</button>
+          <button type="button" class="btn-compare corretor-excluir" data-del-aluno="${i}">Excluir</button>
         </td>
       </tr>
     `).join("");
@@ -301,7 +301,40 @@
     pintarGabarito();
     pintarAlunos();
     $("crResultados").hidden = true;
-    if (atual().questions.length && atual().students.length) gerarResultados(false);
+  }
+
+  function mostrarBanco() {
+    pararVoz();
+    $("crAplicacao").hidden = true;
+    $("crBanco").hidden = false;
+  }
+
+  function mostrarAplicacao() {
+    const a = atual();
+    const escola = nomeEscola(a.escolaId) || "Escola não escolhida";
+    const disciplina = nomeDisciplina(a.disciplinaId) || "Disciplina não escolhida";
+    $("crAplicacaoContexto").textContent = `${anoAtual} ano · ${escola} · ${disciplina}`;
+    $("crBanco").hidden = true;
+    $("crAplicacao").hidden = false;
+    $("crLancamento").hidden = false;
+    const emEdicao = editIndex >= 0 ? a.students[editIndex] : null;
+    const jaTem = document.querySelectorAll("#crRespostas .corretor-q").length;
+    if (emEdicao) pintarRespostas(emEdicao.answers);
+    else if (jaTem !== a.questions.length) pintarRespostas();
+    pintarAlunos();
+    if (a.questions.length && a.students.length) gerarResultados(false);
+    else $("crResultados").hidden = true;
+    $("crAluno").focus();
+  }
+
+  function realizarAvaliacao() {
+    gravarFormulario();
+    salvar();
+    if (!atual().questions.length) {
+      alert("Configure as questões e salve o gabarito antes de realizar a avaliação.");
+      return;
+    }
+    mostrarAplicacao();
   }
 
   function adicionarEscola() {
@@ -378,6 +411,7 @@
     editIndex = -1;
     $("crAluno").value = "";
     pintar();
+    mostrarBanco();
   }
 
   function configurarQuestoes() {
@@ -416,10 +450,8 @@
     }
     gravarFormulario();
     salvar();
-    $("crLancamento").hidden = false;
     pintarRespostas();
     pintarAlunos();
-    $("crAluno").focus();
   }
 
   function lerRespostasDom() {
@@ -812,6 +844,8 @@
       salvar();
     });
     $("crSalvarGabarito").addEventListener("click", salvarGabarito);
+    $("crRealizar").addEventListener("click", realizarAvaliacao);
+    $("crVoltarBanco").addEventListener("click", mostrarBanco);
     $("crSalvarAluno").addEventListener("click", salvarAluno);
     $("crAluno").addEventListener("keydown", (ev) => {
       if (ev.key === "Enter") salvarAluno();
@@ -828,11 +862,12 @@
     $("crVozPausar").addEventListener("click", pausarVoz);
     $("crVozParar").addEventListener("click", pararVoz);
     pintar();
+    mostrarBanco();
   }
 
   window.corretorAoAbrir = function corretorAoAbrir() {
     iniciar();
-    if (atual().questions.length && atual().students.length) gerarResultados(false);
+    mostrarBanco();
   };
 
   if (document.getElementById("crAddEscola")) {
