@@ -10,7 +10,7 @@
   <script>
     document.documentElement.dataset.tema = localStorage.getItem("avalie-tema") === "dia" ? "dia" : "noite";
   </script>
-  <link rel="stylesheet" href="styles.css?v=nomes1" />
+  <link rel="stylesheet" href="styles.css?v=finalizar1" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
 <body class="corretor-solo">
@@ -144,6 +144,11 @@
       <p class="hint" id="crVozTexto">Diga “um 1”, “dois 3” ou “questão 1: 2”.</p>
       <div class="corretor-gabarito" id="crRespostas"></div>
       <button type="button" id="crSalvarAluno" class="btn-compare">Salvar respostas do aluno</button>
+      <div class="corretor-finalizar">
+        <button type="button" id="crFinalizar" class="btn-compare" disabled>Finalizar lançamento</button>
+        <p class="hint" id="crFinalizarTexto" aria-live="polite"></p>
+        <p class="corretor-finalizado" id="crFinalizadoAviso" role="status" hidden>Lançamento finalizado. As respostas desta turma não podem mais ser alteradas.</p>
+      </div>
     </article>
     <article class="card corretor-card" id="crListaBox" hidden>
       <h2>Alunos lançados (<span id="crQtdAlunos">0</span>)</h2>
@@ -201,6 +206,6 @@
   <script src="habilidades.js?v=descritores1"></script>
   <script src="dados_rede.js?v=rede1"></script>
   <script src="dados_nominal.js?v=nomes1"></script>
-  <script src="corretor.js?v=nomes1"></script>
+  <script src="corretor.js?v=finalizar1"></script>
 </body>
 </html>

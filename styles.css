@@ -182,6 +182,33 @@ body.corretor-solo .btn-compare.corretor-excluir:hover {
   filter: none;
   background: #d63d62;
 }
+body.corretor-solo .btn-compare:disabled,
+body.corretor-solo .btn-compare.corretor-excluir:disabled,
+body.corretor-solo .btn-compare:disabled:hover,
+body.corretor-solo .btn-compare.corretor-excluir:disabled:hover {
+  background: #6d858c;
+  color: #eef5f7;
+  cursor: not-allowed;
+  filter: none;
+}
+.corretor-finalizar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-top: 14px;
+}
+.corretor-finalizar .hint { flex: 1 1 220px; }
+.corretor-finalizado {
+  flex: 1 0 100%;
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #2ec4b6;
+  color: #062027;
+  font-weight: 700;
+}
+.corretor-finalizado[hidden] { display: none; }
 .corretor-acoes { margin: 8px 0 16px; }
 .corretor-anos { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
 .corretor-anos button {

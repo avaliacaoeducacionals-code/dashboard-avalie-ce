@@ -61,7 +61,7 @@
   function packVazio() {
     const anos = {};
     ANOS.forEach((a) => { anos[a] = anoVazio(); });
-    return { escolas: [], disciplinas: disciplinasPadrao(), turmas: [], alunos: [], anos };
+    return { escolas: [], disciplinas: disciplinasPadrao(), turmas: [], alunos: [], anos, fechamentos: {} };
   }
 
   function carregar() {
@@ -97,7 +97,15 @@
         const salvo = data.anos && data.anos[a];
         if (salvo && typeof salvo === "object") base.anos[a] = { ...anoVazio(), ...salvo };
       });
-      base.turmas = deduplicarTurmas(base.turmas, base.anos, base.alunos);
+      base.fechamentos = {};
+      if (data.fechamentos && typeof data.fechamentos === "object" && !Array.isArray(data.fechamentos)) {
+        Object.keys(data.fechamentos).forEach((chave) => {
+          const item = data.fechamentos[chave];
+          if (!item || typeof item !== "object" || Array.isArray(item)) return;
+          base.fechamentos[chave] = { quando: item.quando ? String(item.quando) : "" };
+        });
+      }
+      base.turmas = deduplicarTurmas(base.turmas, base.anos, base.alunos, base.fechamentos);
       return base;
     } catch (e) {
       return packVazio();
@@ -162,7 +170,7 @@
     return hit ? hit.nome : "";
   }
 
-  function deduplicarTurmas(lista, anos, alunos) {
+  function deduplicarTurmas(lista, anos, alunos, fechamentosMap) {
     const porNome = new Map();
     const alias = new Map();
     (lista || []).forEach((t) => {
@@ -180,6 +188,17 @@
     (alunos || []).forEach((aluno) => {
       aluno.turmaId = aplicar(aluno.turmaId);
     });
+    if (fechamentosMap && alias.size) {
+      Object.keys(fechamentosMap).forEach((chave) => {
+        const partes = String(chave).split("|");
+        if (partes.length !== 4) return;
+        const novo = alias.get(partes[3]);
+        if (!novo || novo === partes[3]) return;
+        const novaChave = [partes[0], partes[1], partes[2], novo].join("|");
+        if (!fechamentosMap[novaChave]) fechamentosMap[novaChave] = fechamentosMap[chave];
+        delete fechamentosMap[chave];
+      });
+    }
     return [...porNome.values()];
   }
 
@@ -210,6 +229,200 @@
     return (pack.alunos || [])
       .filter((aluno) => aluno.ano === anoAtual && aluno.escolaId === a.escolaId && aluno.turmaId === a.turmaId)
       .sort((x, y) => x.nome.localeCompare(y.nome, "pt-BR"));
+  }
+
+  function mapaFechamentos() {
+    if (!pack.fechamentos || typeof pack.fechamentos !== "object" || Array.isArray(pack.fechamentos)) {
+      pack.fechamentos = {};
+    }
+    return pack.fechamentos;
+  }
+
+  function chaveFechamento(ctx) {
+    return [ctx.escolaId || "", ctx.ano || "", ctx.disciplinaId || "", ctx.turmaId || ""].join("|");
+  }
+
+  function contextoLancamento() {
+    const a = atual();
+    return {
+      escolaId: a.escolaId || "",
+      ano: anoAtual,
+      disciplinaId: a.disciplinaId || "",
+      turmaId: a.turmaId || "",
+    };
+  }
+
+  function contextoCompleto(ctx) {
+    return !!(ctx.escolaId && ctx.ano && ctx.disciplinaId && ctx.turmaId);
+  }
+
+  function lancamentoFinalizado(ctx) {
+    const atualCtx = ctx || contextoLancamento();
+    if (!contextoCompleto(atualCtx)) return false;
+    return !!mapaFechamentos()[chaveFechamento(atualCtx)];
+  }
+
+  function indiceDoAlunoSalvo(cadastro) {
+    const lista = atual().students || [];
+    return lista.findIndex((s) => (
+      (cadastro.id && s.alunoId === cadastro.id) || s.name === cadastro.nome
+    ));
+  }
+
+  function cadastroDoLancado(student) {
+    const todos = pack.alunos || [];
+    if (student && student.alunoId) {
+      const porId = todos.find((aluno) => aluno.id === student.alunoId);
+      if (porId) return porId;
+    }
+    if (!student || !student.name) return null;
+    return todos.find((aluno) => aluno.ano === anoAtual && aluno.nome === student.name) || null;
+  }
+
+  function alunoCongelado(student) {
+    if (lancamentoFinalizado()) return true;
+    const cadastro = cadastroDoLancado(student);
+    const disciplinaId = atual().disciplinaId || "";
+    if (!cadastro || !disciplinaId || !cadastro.escolaId || !cadastro.turmaId || !cadastro.ano) return false;
+    return lancamentoFinalizado({
+      escolaId: cadastro.escolaId,
+      ano: cadastro.ano,
+      disciplinaId,
+      turmaId: cadastro.turmaId,
+    });
+  }
+
+  function resumoFinalizacao() {
+    const ctx = contextoLancamento();
+    const completo = contextoCompleto(ctx);
+    const finalizado = completo && lancamentoFinalizado(ctx);
+    const roster = ctx.escolaId && ctx.turmaId ? alunosDoLancamento() : [];
+    let salvos = 0;
+    roster.forEach((aluno) => {
+      if (indiceDoAlunoSalvo(aluno) >= 0) salvos += 1;
+    });
+    const faltam = Math.max(0, roster.length - salvos);
+    return {
+      ctx,
+      completo,
+      finalizado,
+      total: roster.length,
+      salvos,
+      faltam,
+      pronto: completo && roster.length > 0 && faltam === 0 && !finalizado,
+    };
+  }
+
+  function textoFaltam(n) {
+    return n === 1 ? "Falta 1 aluno para finalizar." : `Faltam ${n} alunos para finalizar.`;
+  }
+
+  function avisarLancamentoFechado() {
+    alert("Lançamento finalizado. As respostas desta turma não podem mais ser alteradas.");
+  }
+
+  function aplicarTravaLancamento(travado) {
+    const salvarBtn = $("crSalvarAluno");
+    if (salvarBtn) salvarBtn.disabled = !!travado;
+    document.querySelectorAll("#crRespostas select").forEach((el) => {
+      el.disabled = !!travado;
+    });
+    if (travado && ouvindo) pararVoz();
+    ["crVozIniciar", "crVozPausar", "crVozParar"].forEach((id) => {
+      const el = $(id);
+      if (!el) return;
+      if (travado) el.disabled = true;
+    });
+    const voz = $("crVozTexto");
+    if (travado) {
+      if (voz) voz.textContent = "Lançamento finalizado. O ditado está bloqueado nesta turma.";
+      return;
+    }
+    if (!ouvindo) {
+      const iniciar = $("crVozIniciar");
+      const pausar = $("crVozPausar");
+      const parar = $("crVozParar");
+      if (iniciar) iniciar.disabled = false;
+      if (pausar) {
+        pausar.disabled = true;
+        pausar.textContent = "Pausar";
+      }
+      if (parar) parar.disabled = true;
+      if (voz && voz.textContent.indexOf("Lançamento finalizado") === 0) {
+        voz.textContent = "Diga “um 1”, “dois 3” ou “questão 1: 2”.";
+      }
+    }
+  }
+
+  function pintarFinalizacao() {
+    const btn = $("crFinalizar");
+    const texto = $("crFinalizarTexto");
+    const aviso = $("crFinalizadoAviso");
+    if (!btn) return;
+    const r = resumoFinalizacao();
+    if (r.finalizado && editIndex >= 0) {
+      editIndex = -1;
+      pintarAlunos();
+    }
+    if (r.finalizado) {
+      btn.disabled = true;
+      btn.textContent = "Lançamento finalizado";
+      if (texto) {
+        texto.hidden = true;
+        texto.textContent = "";
+      }
+      if (aviso) aviso.hidden = false;
+    } else {
+      btn.textContent = "Finalizar lançamento";
+      if (aviso) aviso.hidden = true;
+      if (texto) texto.hidden = false;
+      if (!r.completo) {
+        btn.disabled = true;
+        if (texto) texto.textContent = "Escolha a escola, o ano, a disciplina e a turma.";
+      } else if (!r.total) {
+        btn.disabled = true;
+        if (texto) texto.textContent = "Nenhum aluno cadastrado nesta turma.";
+      } else if (r.faltam > 0) {
+        btn.disabled = true;
+        if (texto) texto.textContent = textoFaltam(r.faltam);
+      } else {
+        btn.disabled = false;
+        if (texto) texto.textContent = "Todos os alunos desta turma estão salvos.";
+      }
+    }
+    aplicarTravaLancamento(r.finalizado);
+  }
+
+  function soltarEdicaoLancamento() {
+    if (editIndex < 0) return;
+    editIndex = -1;
+    const btn = $("crSalvarAluno");
+    if (btn) btn.textContent = "Salvar respostas do aluno";
+  }
+
+  function refrescarFechamentoNaTela() {
+    soltarEdicaoLancamento();
+    pintarAlunos();
+    pintarFinalizacao();
+  }
+
+  function finalizarLancamento() {
+    const antes = resumoFinalizacao();
+    if (!antes.pronto) return;
+    const info = identificacao();
+    const segue = confirm(
+      `Finalizar o lançamento de ${info.escola}, ${anoAtual} ano, ${info.disciplina}, turma ${info.turma}?\n\nDepois de confirmar, não dá para alterar as respostas, salvar de novo, apagar um aluno lançado nem incluir outro resultado nesta turma.`
+    );
+    if (!segue) return;
+    const agora = resumoFinalizacao();
+    if (!agora.pronto) return;
+    mapaFechamentos()[chaveFechamento(agora.ctx)] = { quando: new Date().toISOString() };
+    editIndex = -1;
+    if (ouvindo) pararVoz();
+    salvar();
+    pintarRespostas();
+    pintarAlunos();
+    pintarFinalizacao();
   }
 
   function completarCadastro() {
@@ -577,22 +790,25 @@
         </div>
       `;
     }).join("");
+    aplicarTravaLancamento(lancamentoFinalizado());
   }
 
   function pintarAlunos() {
     const alunos = atual().students;
     $("crListaBox").hidden = alunos.length === 0 && editIndex < 0;
     $("crQtdAlunos").textContent = String(alunos.length);
-    $("crLista").innerHTML = alunos.map((s, i) => `
+    $("crLista").innerHTML = alunos.map((s, i) => {
+      const off = alunoCongelado(s) ? " disabled" : "";
+      return `
       <tr>
         <td>${esc(s.name)}</td>
         <td>${esc((s.answers || []).join(" "))}</td>
         <td>
-          <button type="button" class="btn-compare" data-edit-aluno="${i}">Editar</button>
-          <button type="button" class="btn-compare corretor-excluir" data-del-aluno="${i}">Excluir</button>
+          <button type="button" class="btn-compare" data-edit-aluno="${i}"${off}>Editar</button>
+          <button type="button" class="btn-compare corretor-excluir" data-del-aluno="${i}"${off}>Excluir</button>
         </td>
-      </tr>
-    `).join("");
+      </tr>`;
+    }).join("");
     const btn = $("crSalvarAluno");
     btn.textContent = editIndex >= 0 ? "Atualizar aluno" : "Salvar respostas do aluno";
   }
@@ -608,6 +824,7 @@
     pintarGabarito();
     pintarAlunos();
     pintarLancamentoContexto();
+    pintarFinalizacao();
     $("crResultados").hidden = true;
   }
 
@@ -726,6 +943,7 @@
 
   function mostrarAplicacao(forcarRespostas) {
     const a = atual();
+    if (lancamentoFinalizado()) editIndex = -1;
     $("crBanco").hidden = true;
     $("crAplicacao").hidden = false;
     $("crLancamento").hidden = false;
@@ -739,6 +957,7 @@
     if (aviso) aviso.hidden = a.questions.length > 0;
     if (a.questions.length && a.students.length) gerarResultados(false);
     else $("crResultados").hidden = true;
+    pintarFinalizacao();
     marcarTela(true);
     $("crAluno").focus();
   }
@@ -994,6 +1213,10 @@
   }
 
   function salvarAluno() {
+    if (lancamentoFinalizado()) {
+      avisarLancamentoFechado();
+      return;
+    }
     const escolhido = alunoDoSelect();
     if (!escolhido) {
       alert("Selecione o aluno.");
@@ -1010,10 +1233,18 @@
     const registro = { name: escolhido.name, alunoId: escolhido.alunoId, answers };
     const lista = atual().students;
     if (editIndex >= 0 && lista[editIndex]) {
+      if (alunoCongelado(lista[editIndex])) {
+        avisarLancamentoFechado();
+        return;
+      }
       lista[editIndex] = registro;
       editIndex = -1;
     } else {
       const idx = lista.findIndex((s) => (escolhido.alunoId && s.alunoId === escolhido.alunoId) || s.name === escolhido.name);
+      if (idx >= 0 && alunoCongelado(lista[idx])) {
+        avisarLancamentoFechado();
+        return;
+      }
       if (idx >= 0) lista[idx] = registro;
       else lista.push(registro);
     }
@@ -1021,6 +1252,7 @@
     pintarRespostas();
     pintarAlunos();
     pintarSelectAlunos();
+    pintarFinalizacao();
     $("crListaBox").hidden = false;
     $("crAluno").focus();
   }
@@ -1028,6 +1260,10 @@
   function editarAluno(index) {
     const aluno = atual().students[index];
     if (!aluno) return;
+    if (alunoCongelado(aluno)) {
+      avisarLancamentoFechado();
+      return;
+    }
     editIndex = index;
     pintarRespostas(aluno.answers);
     pintarAlunos();
@@ -1037,6 +1273,12 @@
   }
 
   function excluirAluno(index) {
+    const aluno = atual().students[index];
+    if (!aluno) return;
+    if (alunoCongelado(aluno)) {
+      avisarLancamentoFechado();
+      return;
+    }
     if (!confirm("Excluir as respostas deste aluno?")) return;
     atual().students.splice(index, 1);
     if (editIndex === index) editIndex = -1;
@@ -1044,6 +1286,7 @@
     pintarRespostas();
     pintarAlunos();
     pintarSelectAlunos();
+    pintarFinalizacao();
   }
 
   function gerarResultados(rolar) {
@@ -1253,6 +1496,7 @@
   }
 
   function aplicarFala(texto) {
+    if (lancamentoFinalizado()) return;
     let fala = texto.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     if (/\b(PARAR|FINALIZAR)\b/.test(fala)) {
       pararVoz();
@@ -1274,7 +1518,7 @@
         const resp = match[2];
         const q = atual().questions[indice];
         const campo = $("crResp" + indice);
-        if (q && campo && (resp === "-" || opcoesTipo(q.type).includes(resp))) campo.value = resp;
+        if (q && campo && !campo.disabled && (resp === "-" || opcoesTipo(q.type).includes(resp))) campo.value = resp;
         match = re.exec(fala);
       }
     });
@@ -1296,6 +1540,7 @@
   }
 
   function iniciarVoz() {
+    if (lancamentoFinalizado()) return;
     if (!recognition) {
       $("crVozTexto").textContent = "Este navegador não oferece ditado. Use Chrome.";
       return;
@@ -1393,6 +1638,7 @@
       pintarLancamentoContexto();
       gravarFormulario();
       salvar();
+      refrescarFechamentoNaTela();
     });
     $("crDisciplina").addEventListener("change", () => {
       gravarFormulario();
@@ -1400,12 +1646,14 @@
       gravarFormulario();
       salvar();
       espelharContextoNoLancamento();
+      refrescarFechamentoNaTela();
     });
     $("crTurma").addEventListener("change", () => {
       gravarFormulario();
       salvar();
       espelharContextoNoLancamento();
       pintarSelectAlunos();
+      refrescarFechamentoNaTela();
     });
     ["crNome", "crData", "crMatriculados", "crNQuest"].forEach((id) => {
       $(id).addEventListener("change", () => { gravarFormulario(); salvar(); });
@@ -1449,12 +1697,14 @@
     $("crSalvarGabarito").addEventListener("click", salvarGabarito);
     $("crVoltarBanco").addEventListener("click", mostrarBanco);
     $("crSalvarAluno").addEventListener("click", salvarAluno);
+    $("crFinalizar").addEventListener("click", finalizarLancamento);
     $("crLancEscola").addEventListener("change", () => {
       sincronizarLancamentoParaAno();
       pintarTurmas();
       pintarLancamentoContexto();
       gravarFormulario();
       salvar();
+      refrescarFechamentoNaTela();
     });
     $("crLancDisciplina").addEventListener("change", () => {
       sincronizarLancamentoParaAno();
@@ -1462,12 +1712,14 @@
       pintarGabarito();
       gravarFormulario();
       salvar();
+      refrescarFechamentoNaTela();
     });
     $("crLancTurma").addEventListener("change", () => {
       sincronizarLancamentoParaAno();
       gravarFormulario();
       pintarSelectAlunos();
       salvar();
+      refrescarFechamentoNaTela();
     });
     $("crLancAno").addEventListener("change", () => trocarAno($("crLancAno").value, true));
     $("crLista").addEventListener("click", (ev) => {
