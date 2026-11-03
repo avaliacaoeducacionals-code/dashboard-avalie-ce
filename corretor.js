@@ -303,10 +303,28 @@
     $("crResultados").hidden = true;
   }
 
+  function querRealizar() {
+    try {
+      return new URLSearchParams(location.search).get("realizar") === "1";
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function marcarTela(realizar) {
+    try {
+      const u = new URL(location.href);
+      if (realizar) u.searchParams.set("realizar", "1");
+      else u.searchParams.delete("realizar");
+      history.replaceState(null, "", u.pathname + u.search + u.hash);
+    } catch (e) { /* o endereço acompanha a tela quando o navegador permite */ }
+  }
+
   function mostrarBanco() {
     pararVoz();
     $("crAplicacao").hidden = true;
     $("crBanco").hidden = false;
+    marcarTela(false);
   }
 
   function mostrarAplicacao() {
@@ -324,6 +342,7 @@
     pintarAlunos();
     if (a.questions.length && a.students.length) gerarResultados(false);
     else $("crResultados").hidden = true;
+    marcarTela(true);
     $("crAluno").focus();
   }
 
@@ -862,12 +881,18 @@
     $("crVozPausar").addEventListener("click", pausarVoz);
     $("crVozParar").addEventListener("click", pararVoz);
     pintar();
-    mostrarBanco();
+    if (querRealizar()) mostrarAplicacao();
+    else mostrarBanco();
   }
+
+  window.corretorIrPara = function corretorIrPara(realizar) {
+    iniciar();
+    if (realizar) mostrarAplicacao();
+    else mostrarBanco();
+  };
 
   window.corretorAoAbrir = function corretorAoAbrir() {
     iniciar();
-    mostrarBanco();
   };
 
   if (document.getElementById("crAddEscola")) {

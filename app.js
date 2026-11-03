@@ -6033,21 +6033,46 @@ if (!DATA) {
     if (!btn.dataset.page) return;
     btn.addEventListener("click", () => goto(btn.dataset.page));
   });
-  const abrirCorretor = $("abrirCorretor");
-  if (abrirCorretor) {
-    abrirCorretor.addEventListener("click", (ev) => {
-      let janela = null;
+  function abrirCorretorJanela(ev, realizar) {
+    const url = realizar ? "corretor.html?realizar=1" : "corretor.html";
+    let janela = null;
+    let reaproveitou = false;
+    try {
+      janela = window.open("", "avalieCorretor");
+    } catch (e) {
+      janela = null;
+    }
+    if (janela && !janela.closed) {
       try {
-        janela = window.open("corretor.html", "avalieCorretor");
+        if (typeof janela.corretorIrPara === "function") {
+          janela.corretorIrPara(!!realizar);
+          janela.focus();
+          reaproveitou = true;
+        } else if (janela.location && janela.location.href && !/^about:blank/i.test(String(janela.location.href))) {
+          janela.location.href = url;
+          janela.focus();
+          reaproveitou = true;
+        }
+      } catch (e) {
+        reaproveitou = false;
+      }
+    }
+    if (!reaproveitou) {
+      try {
+        janela = window.open(url, "avalieCorretor");
       } catch (e) {
         janela = null;
       }
-      if (janela) {
-        ev.preventDefault();
-        try { janela.focus(); } catch (e) { /* o link target=avalieCorretor abre a mesma janela */ }
-      }
-    });
+    }
+    if (janela) {
+      ev.preventDefault();
+      try { janela.focus(); } catch (e) { /* o link com target abre a mesma janela */ }
+    }
   }
+  const abrirCorretor = $("abrirCorretor");
+  if (abrirCorretor) abrirCorretor.addEventListener("click", (ev) => abrirCorretorJanela(ev, false));
+  const abrirRealizar = $("abrirRealizar");
+  if (abrirRealizar) abrirRealizar.addEventListener("click", (ev) => abrirCorretorJanela(ev, true));
   const btnComp = $("btnComparar");
   if (btnComp) btnComp.addEventListener("click", () => goto("comparar"));
   const btnRank = $("btnRank");
