@@ -5085,7 +5085,7 @@ function titulosPagina(page) {
     rank: ["Resultado ranqueado", "Colocação das escolas por avaliação e ano — só Português e Matemática"],
     rankgeral: ["Ranking geral", "Protocolo de Acompanhamento 1º ao 9º — média simples das notas de turma (LP e MAT), depois colocação"],
     linhas: ["Gráficos de linhas", "Sequência do emparelhamento (todas as avaliações) por ano, escola ou município — LP e MAT"],
-    corretor: ["Corretor por ano", "Avaliação isolada do 1º ao 9º ano. No lançamento, escola, ano, disciplina, turma e aluno são menus. Tudo fica só neste navegador."],
+    corretor: ["Eixo de avaliação", "Avaliação isolada do 1º ao 9º ano. No lançamento, escola, ano, disciplina, turma e aluno são menus. Tudo fica só neste navegador."],
     consulta: [
       "Consulta de avaliação",
       consultaAnoSel() === "2º"

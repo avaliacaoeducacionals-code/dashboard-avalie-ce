@@ -353,6 +353,11 @@ html:not([data-tema="dia"]) select option { color: #e8f2f6; background-color: #1
   .corretor-gabarito { grid-template-columns: minmax(0, 1fr); }
 }
 .corretor-escala { display: grid; grid-template-columns: 1.4fr .7fr .7fr auto; gap: 8px; margin-bottom: 8px; align-items: center; }
+.corretor-situacao-rotulo {
+  margin: 10px 0 8px;
+  font-weight: 700;
+  color: var(--text);
+}
 .corretor-situacao {
   display: flex;
   flex-wrap: wrap;
@@ -360,15 +365,22 @@ html:not([data-tema="dia"]) select option { color: #e8f2f6; background-color: #1
   margin: 0 0 12px;
 }
 .corretor-situacao button {
-  border: 1px solid var(--line, rgba(255, 255, 255, 0.16));
-  background: var(--bg-2, #0c2430);
-  color: inherit;
+  border: 2px solid #2ec4b6;
+  background: #0e6e66;
+  color: #ffffff;
   border-radius: 8px;
-  padding: 8px 16px;
+  padding: 10px 18px;
+  min-width: 132px;
   cursor: pointer;
   font: inherit;
   font-weight: 700;
   filter: none;
+}
+.corretor-abrir {
+  border: 2px solid #2ec4b6;
+}
+.corretor-abrir h2 {
+  color: #2ec4b6;
 }
 .corretor-situacao button:hover {
   filter: none;
