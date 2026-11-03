@@ -642,10 +642,14 @@
     if (!sel) return;
     const a = atual();
     const alunos = alunosDoLancamento();
+    const temListaNominal = (pack.alunos || []).some((aluno) => aluno.rede);
     if (!a.escolaId || !a.turmaId) {
       sel.innerHTML = `<option value="">Escolha a escola e a turma</option>`;
     } else if (!alunos.length) {
-      sel.innerHTML = `<option value="">Nenhum aluno nesta turma</option>`;
+      const aviso = temListaNominal
+        ? "Nenhum aluno nesta turma"
+        : "Os nomes ficam só no computador em que a lista foi gerada";
+      sel.innerHTML = `<option value="">${aviso}</option>`;
     } else {
       sel.innerHTML = `<option value="">Selecione o aluno</option>` + alunos.map((aluno) => `
         <option value="${esc(aluno.id)}">${esc(aluno.nome)}</option>

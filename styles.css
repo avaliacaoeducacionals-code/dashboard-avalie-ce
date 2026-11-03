@@ -197,19 +197,28 @@ body.corretor-solo .btn-compare.corretor-excluir:hover {
 .corretor-card { margin-bottom: 16px; }
 .corretor-card h2 { margin-top: 0; }
 .corretor-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
-#crLancamento .corretor-grid { margin-bottom: 14px; }
-#crLancamento .corretor-grid select {
-  appearance: none;
-  -webkit-appearance: none;
+#crLancamento .corretor-grid { margin-bottom: 14px; overflow: visible; }
+#crLancamento,
+#crLancamento .corretor-grid,
+#crLancamento .corretor-grid label { overflow: visible; }
+.corretor-grid label, .corretor-card > label { display: block; font-size: 14px; overflow: visible; }
+.corretor-grid label select,
+.corretor-grid label input,
+.corretor-card > label select,
+.corretor-card > label input { display: block; width: 100%; margin-top: 6px; }
+#crLancamento .corretor-grid select,
+.corretor-grid select,
+.corretor-q select {
+  appearance: auto;
+  -webkit-appearance: menulist;
+  background-image: none;
+  color: var(--text);
   min-width: 0;
-  padding: 8px 2.5rem 8px 10px;
-  background-color: var(--bg-2, #0c2430);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='none' stroke='%236d8794' stroke-width='1.6' stroke-linecap='round' d='M1 1.2 L6 6.2 L11 1.2'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  background-size: 12px 8px;
 }
-.corretor-grid label, .corretor-card > label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+html[data-tema="dia"] select { color-scheme: light; }
+html:not([data-tema="dia"]) select { color-scheme: dark; }
+select option { color: #102027; background-color: #ffffff; }
+html:not([data-tema="dia"]) select option { color: #e8f2f6; background-color: #102c39; }
 .corretor-gabarito {
   display: grid;
   grid-template-columns: repeat(5, minmax(160px, 1fr));
@@ -283,31 +292,25 @@ body.corretor-solo .btn-compare.corretor-excluir:hover {
 .corretor-q select, .corretor-grid input, .corretor-grid select, .corretor-card > label input, .corretor-escola-add input, .corretor-escala input {
   width: 100%;
   box-sizing: border-box;
-  padding: 8px;
+  padding: 8px 10px;
   border-radius: 8px;
   border: 1px solid var(--line, rgba(255,255,255,.16));
-  background: transparent;
-  color: inherit;
+  background-color: var(--bg-2, #0c2430);
+  color: var(--text);
   font: inherit;
 }
 .corretor-gabarito .corretor-q {
   min-width: 0;
   box-sizing: border-box;
+  overflow: visible;
 }
 .corretor-gabarito .corretor-q select {
   box-sizing: border-box;
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  appearance: none;
-  -webkit-appearance: none;
-  padding: 8px 2.5rem 8px 10px;
+  flex: 0 0 auto;
   line-height: 1.3;
-  background-color: var(--bg-2, #0c2430);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='none' stroke='%236d8794' stroke-width='1.6' stroke-linecap='round' d='M1 1.2 L6 6.2 L11 1.2'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  background-size: 12px 8px;
 }
 @media (max-width: 980px) {
   .corretor-gabarito { grid-template-columns: repeat(3, minmax(0, 1fr)); }
