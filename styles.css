@@ -198,6 +198,8 @@ body.corretor-solo .btn-compare.corretor-excluir:hover {
 .corretor-card h2 { margin-top: 0; }
 .corretor-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
 #crLancamento .corretor-grid { margin-bottom: 14px; overflow: visible; }
+#crLancamento .corretor-campo-aluno { grid-column: 1 / -1; }
+#crAluno { width: 100%; min-width: 100%; max-width: none; }
 #crLancamento,
 #crLancamento .corretor-grid,
 #crLancamento .corretor-grid label { overflow: visible; }

@@ -10,7 +10,7 @@
   <script>
     document.documentElement.dataset.tema = localStorage.getItem("avalie-tema") === "dia" ? "dia" : "noite";
   </script>
-  <link rel="stylesheet" href="styles.css?v=escolas2" />
+  <link rel="stylesheet" href="styles.css?v=nomes1" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
 <body class="corretor-solo">
@@ -35,7 +35,7 @@
     </header>
 
     <div id="crBanco">
-    <p class="hint">Cada ano guarda a própria avaliação neste navegador. As escolas e as turmas da rede já estão na página. O nome de cada aluno fica só neste navegador e não vai para o GitHub. As respostas são números: 1, 2, 3 e 4. Se a questão tiver 5 opções, a quinta é 5. Verdadeiro ou falso continua V e F.</p>
+    <p class="hint">Cada ano guarda a própria avaliação neste navegador. No lançamento, o nome é o da escola, do ano e da turma escolhidos. As respostas são números: 1, 2, 3 e 4. Se a questão tiver 5 opções, a quinta é 5. Verdadeiro ou falso continua V e F.</p>
     <article class="card corretor-card">
       <h2>Escolas cadastradas</h2>
       <p class="hint">Cadastro único deste navegador. As escolas da rede já entram nesta lista. Escolha, em cada ano, qual escola fez a avaliação.</p>
@@ -131,7 +131,7 @@
         <label>Turma
           <select id="crLancTurma" aria-label="Turma da avaliação"></select>
         </label>
-        <label>Nome do aluno
+        <label class="corretor-campo-aluno">Nome do aluno
           <select id="crAluno" aria-label="Nome do aluno"></select>
         </label>
       </div>
@@ -200,6 +200,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="habilidades.js?v=descritores1"></script>
   <script src="dados_rede.js?v=rede1"></script>
-  <script src="corretor.js?v=escolas2"></script>
+  <script src="dados_nominal.js?v=nomes1"></script>
+  <script src="corretor.js?v=nomes1"></script>
 </body>
 </html>

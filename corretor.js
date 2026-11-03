@@ -642,17 +642,13 @@
     if (!sel) return;
     const a = atual();
     const alunos = alunosDoLancamento();
-    const temListaNominal = (pack.alunos || []).some((aluno) => aluno.rede);
     if (!a.escolaId || !a.turmaId) {
       sel.innerHTML = `<option value="">Escolha a escola e a turma</option>`;
     } else if (!alunos.length) {
-      const aviso = temListaNominal
-        ? "Nenhum aluno nesta turma"
-        : "Os nomes ficam só no computador em que a lista foi gerada";
-      sel.innerHTML = `<option value="">${aviso}</option>`;
+      sel.innerHTML = `<option value="">Nenhum aluno nesta turma</option>`;
     } else {
       sel.innerHTML = `<option value="">Selecione o aluno</option>` + alunos.map((aluno) => `
-        <option value="${esc(aluno.id)}">${esc(aluno.nome)}</option>
+        <option value="${esc(aluno.id)}" title="${esc(aluno.nome)}">${esc(aluno.nome)}</option>
       `).join("");
     }
     if (editIndex < 0) {
@@ -1340,7 +1336,7 @@
       if (iniciando) return;
       iniciando = true;
       const script = document.createElement("script");
-      script.src = "dados_nominal.js?v=rede1";
+      script.src = "dados_nominal.js?v=nomes1";
       script.onload = () => { iniciando = false; iniciar(); };
       script.onerror = () => {
         window.CORRETOR_NOMINAL = [];
