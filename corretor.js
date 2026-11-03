@@ -18,6 +18,7 @@
   let recognition = null;
   let ouvindo = false;
   let iniciado = false;
+  let iniciando = false;
 
   function soltarRotulosGlobais() {
     try {
@@ -76,19 +77,27 @@
       base.turmas = Array.isArray(data.turmas)
         ? data.turmas
           .filter((t) => t && t.id && t.nome)
-          .map((t) => ({ id: String(t.id), nome: normalizarTurma(t.nome) }))
+          .map((t) => ({ id: String(t.id), nome: normalizarTurma(t.nome), rede: !!t.rede }))
           .filter((t) => t.nome)
         : [];
       base.alunos = Array.isArray(data.alunos)
         ? data.alunos
           .filter((a) => a && a.id && a.nome)
-          .map((a) => ({ id: String(a.id), nome: normalizarAluno(a.nome) }))
+          .map((a) => ({
+            id: String(a.id),
+            nome: normalizarAluno(a.nome),
+            escolaId: a.escolaId ? String(a.escolaId) : "",
+            ano: ANOS.includes(a.ano) ? a.ano : "",
+            turmaId: a.turmaId ? String(a.turmaId) : "",
+            rede: !!a.rede,
+          }))
           .filter((a) => a.nome)
         : [];
       ANOS.forEach((a) => {
         const salvo = data.anos && data.anos[a];
         if (salvo && typeof salvo === "object") base.anos[a] = { ...anoVazio(), ...salvo };
       });
+      base.turmas = deduplicarTurmas(base.turmas, base.anos, base.alunos);
       return base;
     } catch (e) {
       return packVazio();
@@ -114,7 +123,34 @@
   }
 
   function normalizarTurma(nome) {
-    return String(nome || "").replace(/\s+/g, " ").trim().toLocaleUpperCase("pt-BR");
+    return String(nome || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/º/g, "")
+      .replace(/\bANO\b/gi, "")
+      .replace(/[^0-9A-Za-z]/g, "")
+      .toLocaleUpperCase("pt-BR");
+  }
+
+  function fold(s) {
+    return String(s || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLocaleUpperCase("pt-BR");
+  }
+
+  function idEstavel(prefixo, texto) {
+    let a = 2166136261;
+    let b = 5381;
+    const s = String(texto);
+    for (let i = 0; i < s.length; i += 1) {
+      a ^= s.charCodeAt(i);
+      a = Math.imul(a, 16777619);
+      b = (Math.imul(b, 33) ^ s.charCodeAt(i)) >>> 0;
+    }
+    return prefixo + (a >>> 0).toString(36) + (b >>> 0).toString(36);
   }
 
   function normalizarAluno(nome) {
@@ -124,6 +160,115 @@
   function nomeTurma(id) {
     const hit = (pack.turmas || []).find((t) => t.id === id);
     return hit ? hit.nome : "";
+  }
+
+  function deduplicarTurmas(lista, anos, alunos) {
+    const porNome = new Map();
+    const alias = new Map();
+    (lista || []).forEach((t) => {
+      const nome = normalizarTurma(t.nome);
+      if (!nome) return;
+      if (!porNome.has(nome)) porNome.set(nome, { id: String(t.id), nome, rede: !!t.rede });
+      else alias.set(String(t.id), porNome.get(nome).id);
+    });
+    const aplicar = (id) => (id && alias.get(String(id))) || id || "";
+    if (anos) {
+      ANOS.forEach((ano) => {
+        if (anos[ano]) anos[ano].turmaId = aplicar(anos[ano].turmaId);
+      });
+    }
+    (alunos || []).forEach((aluno) => {
+      aluno.turmaId = aplicar(aluno.turmaId);
+    });
+    return [...porNome.values()];
+  }
+
+  function turmasDaAvaliacao(ano, escolaId, turmaIdAtual) {
+    const todas = pack.turmas || [];
+    const numero = String(ano || "").replace(/\D/g, "");
+    let lista = todas.filter((t) => String(t.nome).startsWith(numero));
+    const temRede = (pack.alunos || []).some((aluno) => aluno.rede);
+    if (temRede && escolaId) {
+      const ids = new Set(
+        (pack.alunos || [])
+          .filter((aluno) => aluno.ano === ano && aluno.escolaId === escolaId && aluno.turmaId)
+          .map((aluno) => aluno.turmaId)
+      );
+      const daEscola = lista.filter((t) => ids.has(t.id));
+      if (daEscola.length) lista = daEscola;
+    }
+    if (turmaIdAtual && !lista.some((t) => t.id === turmaIdAtual)) {
+      const extra = todas.find((t) => t.id === turmaIdAtual);
+      if (extra) lista = lista.concat([extra]);
+    }
+    return lista.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR", { numeric: true }));
+  }
+
+  function alunosDoLancamento() {
+    const a = atual();
+    if (!a.escolaId || !a.turmaId) return [];
+    return (pack.alunos || [])
+      .filter((aluno) => aluno.ano === anoAtual && aluno.escolaId === a.escolaId && aluno.turmaId === a.turmaId)
+      .sort((x, y) => x.nome.localeCompare(y.nome, "pt-BR"));
+  }
+
+  function completarCadastro() {
+    const rede = window.CORRETOR_REDE || {};
+    const nominal = Array.isArray(window.CORRETOR_NOMINAL) ? window.CORRETOR_NOMINAL : [];
+    let mudou = false;
+    (rede.escolas || []).forEach((nome) => {
+      const limpo = String(nome || "").replace(/\s+/g, " ").trim();
+      if (!limpo) return;
+      if (pack.escolas.some((e) => fold(e.nome) === fold(limpo))) return;
+      pack.escolas.push({ id: idEstavel("e", fold(limpo)), nome: limpo, rede: true });
+      mudou = true;
+    });
+    (rede.turmas || []).forEach((nome) => {
+      const sigla = normalizarTurma(nome);
+      if (!sigla) return;
+      if ((pack.turmas || []).some((t) => normalizarTurma(t.nome) === sigla)) return;
+      pack.turmas.push({ id: "t-" + sigla, nome: sigla, rede: true });
+      mudou = true;
+    });
+    const escolaPorFold = new Map(pack.escolas.map((e) => [fold(e.nome), e.id]));
+    const turmaPorSigla = new Map((pack.turmas || []).map((t) => [normalizarTurma(t.nome), t.id]));
+    const porId = new Map((pack.alunos || []).map((aluno) => [aluno.id, aluno]));
+    const porChave = new Set((pack.alunos || []).map((aluno) => [
+      aluno.escolaId || "",
+      aluno.ano || "",
+      aluno.turmaId || "",
+      fold(aluno.nome),
+    ].join("|")));
+    nominal.forEach((item) => {
+      const nome = normalizarAluno(item.nome);
+      const ano = ANOS.includes(item.ano) ? item.ano : "";
+      const sigla = normalizarTurma(item.turma);
+      const escolaId = escolaPorFold.get(fold(item.escola)) || "";
+      const turmaId = turmaPorSigla.get(sigla) || "";
+      if (!nome || !ano || !escolaId || !turmaId) return;
+      const id = idEstavel("a", fold(item.escola) + "|" + ano + "|" + sigla + "|" + fold(nome));
+      const chave = [escolaId, ano, turmaId, fold(nome)].join("|");
+      const existente = porId.get(id);
+      if (existente) {
+        if (!existente.escolaId || !existente.ano || !existente.turmaId) {
+          existente.escolaId = existente.escolaId || escolaId;
+          existente.ano = existente.ano || ano;
+          existente.turmaId = existente.turmaId || turmaId;
+          existente.rede = true;
+          mudou = true;
+        }
+        return;
+      }
+      if (porChave.has(chave)) return;
+      const novo = { id, nome, escolaId, ano, turmaId, rede: true };
+      pack.alunos.push(novo);
+      porId.set(id, novo);
+      porChave.add(chave);
+      mudou = true;
+    });
+    pack.escolas.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+    pack.turmas.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR", { numeric: true }));
+    if (mudou) salvar();
   }
 
   function identificacao() {
@@ -351,10 +496,11 @@
     }
     const sel = $("crTurma");
     const id = atual().turmaId || "";
-    sel.innerHTML = `<option value="">Selecione a turma</option>` + turmas.map((t) => `
+    const visiveis = turmasDaAvaliacao(anoAtual, atual().escolaId, id);
+    sel.innerHTML = `<option value="">Selecione a turma</option>` + visiveis.map((t) => `
       <option value="${esc(t.id)}">${esc(t.nome)}</option>
     `).join("");
-    sel.value = turmas.some((t) => t.id === id) ? id : "";
+    sel.value = visiveis.some((t) => t.id === id) ? id : "";
     atual().turmaId = sel.value;
   }
 
@@ -494,10 +640,17 @@
   function pintarSelectAlunos() {
     const sel = $("crAluno");
     if (!sel) return;
-    const alunos = pack.alunos || [];
-    sel.innerHTML = `<option value="">Selecione o aluno</option>` + alunos.map((aluno) => `
-      <option value="${esc(aluno.id)}">${esc(aluno.nome)}</option>
-    `).join("");
+    const a = atual();
+    const alunos = alunosDoLancamento();
+    if (!a.escolaId || !a.turmaId) {
+      sel.innerHTML = `<option value="">Escolha a escola e a turma</option>`;
+    } else if (!alunos.length) {
+      sel.innerHTML = `<option value="">Nenhum aluno nesta turma</option>`;
+    } else {
+      sel.innerHTML = `<option value="">Selecione o aluno</option>` + alunos.map((aluno) => `
+        <option value="${esc(aluno.id)}">${esc(aluno.nome)}</option>
+      `).join("");
+    }
     if (editIndex < 0) {
       sel.value = "";
       return;
@@ -529,7 +682,7 @@
       ano.value = anoAtual;
     }
     preencherSelect($("crLancDisciplina"), "Selecione a disciplina", pack.disciplinas, a.disciplinaId);
-    preencherSelect($("crLancTurma"), "Selecione a turma", pack.turmas || [], a.turmaId);
+    preencherSelect($("crLancTurma"), "Selecione a turma", turmasDaAvaliacao(anoAtual, a.escolaId, a.turmaId), a.turmaId);
     pintarSelectAlunos();
   }
 
@@ -716,17 +869,30 @@
       $("crNovoAluno").focus();
       return;
     }
-    const repetido = (pack.alunos || []).some((aluno) => aluno.nome.localeCompare(nome, "pt-BR", { sensitivity: "accent" }) === 0);
+    const a = atual();
+    if (!a.escolaId || !a.turmaId) {
+      alert("Escolha a escola e a turma deste ano antes de incluir o aluno.");
+      return;
+    }
+    const repetido = (pack.alunos || []).some((aluno) => (
+      aluno.ano === anoAtual &&
+      aluno.escolaId === a.escolaId &&
+      aluno.turmaId === a.turmaId &&
+      fold(aluno.nome) === fold(nome)
+    ));
     if (repetido) {
-      alert("Esse aluno já está cadastrado.");
+      alert("Esse aluno já está nesta turma.");
       return;
     }
     gravarFormulario();
     pack.alunos.push({
       id: "a" + Date.now().toString(36) + Math.floor(Math.random() * 1000).toString(36),
       nome,
+      escolaId: a.escolaId,
+      ano: anoAtual,
+      turmaId: a.turmaId,
+      rede: false,
     });
-    pack.alunos.sort((x, y) => x.nome.localeCompare(y.nome, "pt-BR"));
     $("crNovoAluno").value = "";
     salvar();
     pintarAlunosCadastro();
@@ -752,12 +918,17 @@
   function pintarAlunosCadastro() {
     const ul = $("crAlunosLista");
     if (!ul) return;
-    const alunos = pack.alunos || [];
-    if (!alunos.length) {
+    const todos = pack.alunos || [];
+    const manuais = todos.filter((aluno) => !aluno.rede);
+    const rede = todos.length - manuais.length;
+    if (!todos.length) {
       ul.innerHTML = "<li><span>Nenhum aluno cadastrado.</span></li>";
       return;
     }
-    ul.innerHTML = alunos.map((aluno) => `
+    const resumo = rede
+      ? `<li><span>${rede} alunos da rede. No lançamento, a lista é a da escola, do ano e da turma escolhidos.</span></li>`
+      : "";
+    ul.innerHTML = resumo + manuais.map((aluno) => `
       <li>
         <span>${esc(aluno.nome)}</span>
         <button type="button" class="btn-compare corretor-excluir" data-del-aluno-cadastro="${esc(aluno.id)}">Excluir</button>
@@ -1161,9 +1332,24 @@
 
   function iniciar() {
     if (iniciado) return;
+    if (!Array.isArray(window.CORRETOR_NOMINAL)) {
+      if (iniciando) return;
+      iniciando = true;
+      const script = document.createElement("script");
+      script.src = "dados_nominal.js?v=rede1";
+      script.onload = () => { iniciando = false; iniciar(); };
+      script.onerror = () => {
+        window.CORRETOR_NOMINAL = [];
+        iniciando = false;
+        iniciar();
+      };
+      document.head.appendChild(script);
+      return;
+    }
     iniciado = true;
     soltarRotulosGlobais();
     pack = carregar();
+    completarCadastro();
     prepararVoz();
     $("crAddEscola").addEventListener("click", adicionarEscola);
     $("crNovaEscola").addEventListener("keydown", (ev) => {
@@ -1201,7 +1387,13 @@
       const btn = ev.target.closest("[data-ano]");
       if (btn) selecionarAno(btn.dataset.ano);
     });
-    $("crEscola").addEventListener("change", () => { gravarFormulario(); salvar(); espelharContextoNoLancamento(); });
+    $("crEscola").addEventListener("change", () => {
+      gravarFormulario();
+      pintarTurmas();
+      pintarLancamentoContexto();
+      gravarFormulario();
+      salvar();
+    });
     $("crDisciplina").addEventListener("change", () => {
       gravarFormulario();
       pintarGabarito();
@@ -1209,7 +1401,12 @@
       salvar();
       espelharContextoNoLancamento();
     });
-    $("crTurma").addEventListener("change", () => { gravarFormulario(); salvar(); espelharContextoNoLancamento(); });
+    $("crTurma").addEventListener("change", () => {
+      gravarFormulario();
+      salvar();
+      espelharContextoNoLancamento();
+      pintarSelectAlunos();
+    });
     ["crNome", "crData", "crMatriculados", "crNQuest"].forEach((id) => {
       $(id).addEventListener("change", () => { gravarFormulario(); salvar(); });
     });
@@ -1252,16 +1449,25 @@
     $("crSalvarGabarito").addEventListener("click", salvarGabarito);
     $("crVoltarBanco").addEventListener("click", mostrarBanco);
     $("crSalvarAluno").addEventListener("click", salvarAluno);
-    ["crLancEscola", "crLancDisciplina", "crLancTurma"].forEach((id) => {
-      $(id).addEventListener("change", () => {
-        sincronizarLancamentoParaAno();
-        gravarFormulario();
-        if (id === "crLancDisciplina") {
-          pintarGabarito();
-          gravarFormulario();
-        }
-        salvar();
-      });
+    $("crLancEscola").addEventListener("change", () => {
+      sincronizarLancamentoParaAno();
+      pintarTurmas();
+      pintarLancamentoContexto();
+      gravarFormulario();
+      salvar();
+    });
+    $("crLancDisciplina").addEventListener("change", () => {
+      sincronizarLancamentoParaAno();
+      gravarFormulario();
+      pintarGabarito();
+      gravarFormulario();
+      salvar();
+    });
+    $("crLancTurma").addEventListener("change", () => {
+      sincronizarLancamentoParaAno();
+      gravarFormulario();
+      pintarSelectAlunos();
+      salvar();
     });
     $("crLancAno").addEventListener("change", () => trocarAno($("crLancAno").value, true));
     $("crLista").addEventListener("click", (ev) => {

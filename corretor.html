@@ -35,10 +35,10 @@
     </header>
 
     <div id="crBanco">
-    <p class="hint">Cada ano guarda a própria avaliação neste navegador. As listas de escolas, de disciplinas, de turmas e de alunos valem para todos os anos. Nomes de alunos, gabarito, escolas, disciplinas e turmas não são enviados ao GitHub. As respostas são números: 1, 2, 3 e 4. Se a questão tiver 5 opções, a quinta é 5. Verdadeiro ou falso continua V e F.</p>
+    <p class="hint">Cada ano guarda a própria avaliação neste navegador. As escolas e as turmas da rede já estão na página. O nome de cada aluno fica só neste navegador e não vai para o GitHub. As respostas são números: 1, 2, 3 e 4. Se a questão tiver 5 opções, a quinta é 5. Verdadeiro ou falso continua V e F.</p>
     <article class="card corretor-card">
       <h2>Escolas cadastradas</h2>
-      <p class="hint">Cadastro único deste navegador. Escolha, em cada ano, qual escola fez a avaliação.</p>
+      <p class="hint">Cadastro único deste navegador. As escolas da rede já entram nesta lista. Escolha, em cada ano, qual escola fez a avaliação.</p>
       <div class="corretor-escola-add">
         <input id="crNovaEscola" type="text" placeholder="Nome da escola" aria-label="Nome da escola para cadastrar" />
         <button type="button" id="crAddEscola" class="btn-compare">Adicionar escola</button>
@@ -56,7 +56,7 @@
     </article>
     <article class="card corretor-card">
       <h2>Turmas cadastradas</h2>
-      <p class="hint">Cadastro único deste navegador. Cadastre as turmas que for usar, como 1A, 1B ou 9º A. Escolha, em cada ano, a turma da avaliação.</p>
+      <p class="hint">Cadastro único deste navegador. As turmas da rede já entram como 1A, 1B ou 9A. No ano escolhido, o menu mostra as turmas daquela escola.</p>
       <div class="corretor-escola-add">
         <input id="crNovaTurma" type="text" placeholder="Nome da turma" aria-label="Nome da turma para cadastrar" />
         <button type="button" id="crAddTurma" class="btn-compare">Adicionar turma</button>
@@ -65,7 +65,7 @@
     </article>
     <article class="card corretor-card">
       <h2>Alunos cadastrados</h2>
-      <p class="hint">Cadastro único deste navegador. No lançamento, o nome é escolhido neste menu. Não se digita o aluno na hora da prova.</p>
+      <p class="hint">No lançamento, o menu traz só os alunos da escola, do ano e da turma escolhidos. Um nome extra, incluído aqui, entra nessa mesma turma.</p>
       <div class="corretor-escola-add">
         <input id="crNovoAluno" type="text" placeholder="Nome do aluno" aria-label="Nome do aluno para cadastrar" />
         <button type="button" id="crAddAlunoCadastro" class="btn-compare">Adicionar aluno</button>
@@ -199,6 +199,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="habilidades.js?v=descritores1"></script>
-  <script src="corretor.js?v=descritores1"></script>
+  <script src="dados_rede.js?v=rede1"></script>
+  <script src="corretor.js?v=rede1"></script>
 </body>
 </html>
