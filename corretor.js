@@ -346,16 +346,6 @@
     $("crAluno").focus();
   }
 
-  function realizarAvaliacao() {
-    gravarFormulario();
-    salvar();
-    if (!atual().questions.length) {
-      alert("Configure as questões e salve o gabarito antes de realizar a avaliação.");
-      return;
-    }
-    mostrarAplicacao();
-  }
-
   function adicionarEscola() {
     const nome = $("crNovaEscola").value.trim();
     if (!nome) {
@@ -863,7 +853,6 @@
       salvar();
     });
     $("crSalvarGabarito").addEventListener("click", salvarGabarito);
-    $("crRealizar").addEventListener("click", realizarAvaliacao);
     $("crVoltarBanco").addEventListener("click", mostrarBanco);
     $("crSalvarAluno").addEventListener("click", salvarAluno);
     $("crAluno").addEventListener("keydown", (ev) => {
