@@ -10,7 +10,7 @@
   <script>
     document.documentElement.dataset.tema = localStorage.getItem("avalie-tema") === "dia" ? "dia" : "noite";
   </script>
-  <link rel="stylesheet" href="styles.css?v=lancamento5" />
+  <link rel="stylesheet" href="styles.css?v=lancamento6" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
 <body class="corretor-solo">
@@ -35,7 +35,7 @@
     </header>
 
     <div id="crBanco">
-    <p class="hint">Cada ano guarda a própria avaliação neste navegador. As listas de escolas, de disciplinas e de turmas valem para todos os anos. Nomes de alunos, gabarito, escolas, disciplinas e turmas não são enviados ao GitHub. As respostas são números: 1, 2, 3 e 4. Se a questão tiver 5 opções, a quinta é 5. Verdadeiro ou falso continua V e F.</p>
+    <p class="hint">Cada ano guarda a própria avaliação neste navegador. As listas de escolas, de disciplinas, de turmas e de alunos valem para todos os anos. Nomes de alunos, gabarito, escolas, disciplinas e turmas não são enviados ao GitHub. As respostas são números: 1, 2, 3 e 4. Se a questão tiver 5 opções, a quinta é 5. Verdadeiro ou falso continua V e F.</p>
     <article class="card corretor-card">
       <h2>Escolas cadastradas</h2>
       <p class="hint">Cadastro único deste navegador. Escolha, em cada ano, qual escola fez a avaliação.</p>
@@ -62,6 +62,15 @@
         <button type="button" id="crAddTurma" class="btn-compare">Adicionar turma</button>
       </div>
       <ul id="crTurmasLista" class="corretor-escolas"></ul>
+    </article>
+    <article class="card corretor-card">
+      <h2>Alunos cadastrados</h2>
+      <p class="hint">Cadastro único deste navegador. No lançamento, o nome é escolhido neste menu. Não se digita o aluno na hora da prova.</p>
+      <div class="corretor-escola-add">
+        <input id="crNovoAluno" type="text" placeholder="Nome do aluno" aria-label="Nome do aluno para cadastrar" />
+        <button type="button" id="crAddAlunoCadastro" class="btn-compare">Adicionar aluno</button>
+      </div>
+      <ul id="crAlunosLista" class="corretor-escolas"></ul>
     </article>
     <div class="corretor-anos" id="corretorAnos" role="tablist" aria-label="Ano da avaliação"></div>
     <article class="card corretor-card">
@@ -107,12 +116,26 @@
     <p class="corretor-acoes">
       <button type="button" id="crVoltarBanco" class="btn-compare">Voltar ao banco de dados</button>
     </p>
-    <p class="hint" id="crAplicacaoContexto"></p>
     <article class="card corretor-card" id="crLancamento">
       <h2>4. Lançamento das respostas</h2>
-      <label>Nome do aluno
-        <input id="crAluno" type="text" placeholder="Nome completo" />
-      </label>
+      <div class="corretor-grid">
+        <label>Escola
+          <select id="crLancEscola" aria-label="Escola da avaliação"></select>
+        </label>
+        <label>Ano
+          <select id="crLancAno" aria-label="Ano da avaliação"></select>
+        </label>
+        <label>Disciplina
+          <select id="crLancDisciplina" aria-label="Disciplina da avaliação"></select>
+        </label>
+        <label>Turma
+          <select id="crLancTurma" aria-label="Turma da avaliação"></select>
+        </label>
+        <label>Nome do aluno
+          <select id="crAluno" aria-label="Nome do aluno"></select>
+        </label>
+      </div>
+      <p class="hint" id="crSemGabarito" hidden>Este ano ainda não tem gabarito. Volte ao banco para configurar as questões.</p>
       <div class="corretor-voz">
         <button type="button" id="crVozIniciar" class="btn-compare">Ditar</button>
         <button type="button" id="crVozPausar" class="btn-compare" disabled>Pausar</button>
@@ -175,6 +198,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="corretor.js?v=turmas1"></script>
+  <script src="corretor.js?v=alunos1"></script>
 </body>
 </html>

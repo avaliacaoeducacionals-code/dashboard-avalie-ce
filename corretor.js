@@ -60,7 +60,7 @@
   function packVazio() {
     const anos = {};
     ANOS.forEach((a) => { anos[a] = anoVazio(); });
-    return { escolas: [], disciplinas: disciplinasPadrao(), turmas: [], anos };
+    return { escolas: [], disciplinas: disciplinasPadrao(), turmas: [], alunos: [], anos };
   }
 
   function carregar() {
@@ -78,6 +78,12 @@
           .filter((t) => t && t.id && t.nome)
           .map((t) => ({ id: String(t.id), nome: normalizarTurma(t.nome) }))
           .filter((t) => t.nome)
+        : [];
+      base.alunos = Array.isArray(data.alunos)
+        ? data.alunos
+          .filter((a) => a && a.id && a.nome)
+          .map((a) => ({ id: String(a.id), nome: normalizarAluno(a.nome) }))
+          .filter((a) => a.nome)
         : [];
       ANOS.forEach((a) => {
         const salvo = data.anos && data.anos[a];
@@ -109,6 +115,10 @@
 
   function normalizarTurma(nome) {
     return String(nome || "").replace(/\s+/g, " ").trim().toLocaleUpperCase("pt-BR");
+  }
+
+  function normalizarAluno(nome) {
+    return String(nome || "").replace(/\s+/g, " ").trim();
   }
 
   function nomeTurma(id) {
@@ -304,7 +314,9 @@
         </div>
       `;
     }).join("");
-    $("crLancamento").hidden = qs.length === 0;
+    $("crLancamento").hidden = false;
+    const aviso = $("crSemGabarito");
+    if (aviso) aviso.hidden = qs.length > 0;
     if (qs.length) pintarRespostas();
   }
 
@@ -346,10 +358,12 @@
     pintarEscolas();
     pintarDisciplinas();
     pintarTurmas();
+    pintarAlunosCadastro();
     pintarCampos();
     pintarEscalas();
     pintarGabarito();
     pintarAlunos();
+    pintarLancamentoContexto();
     $("crResultados").hidden = true;
   }
 
@@ -370,6 +384,88 @@
     } catch (e) { /* o endereço acompanha a tela quando o navegador permite */ }
   }
 
+  function preencherSelect(el, vazio, itens, idAtual) {
+    if (!el) return;
+    const lista = itens || [];
+    el.innerHTML = `<option value="">${vazio}</option>` + lista.map((item) => `
+      <option value="${esc(item.id)}">${esc(item.nome)}</option>
+    `).join("");
+    el.value = lista.some((item) => item.id === idAtual) ? idAtual : "";
+  }
+
+  function pintarSelectAlunos() {
+    const sel = $("crAluno");
+    if (!sel) return;
+    const alunos = pack.alunos || [];
+    sel.innerHTML = `<option value="">Selecione o aluno</option>` + alunos.map((aluno) => `
+      <option value="${esc(aluno.id)}">${esc(aluno.nome)}</option>
+    `).join("");
+    if (editIndex < 0) {
+      sel.value = "";
+      return;
+    }
+    const lancado = atual().students[editIndex];
+    if (!lancado) {
+      sel.value = "";
+      return;
+    }
+    const porId = lancado.alunoId && alunos.some((aluno) => aluno.id === lancado.alunoId) ? lancado.alunoId : "";
+    const porNome = alunos.find((aluno) => aluno.nome.localeCompare(lancado.name || "", "pt-BR", { sensitivity: "accent" }) === 0);
+    let valor = porId || (porNome ? porNome.id : "");
+    if (!valor && lancado.name) {
+      const opt = document.createElement("option");
+      opt.value = "legado:" + editIndex;
+      opt.textContent = lancado.name;
+      sel.appendChild(opt);
+      valor = opt.value;
+    }
+    sel.value = valor;
+  }
+
+  function pintarLancamentoContexto() {
+    const a = atual();
+    preencherSelect($("crLancEscola"), "Selecione a escola", pack.escolas, a.escolaId);
+    const ano = $("crLancAno");
+    if (ano) {
+      ano.innerHTML = ANOS.map((item) => `<option value="${item}">${item} ano</option>`).join("");
+      ano.value = anoAtual;
+    }
+    preencherSelect($("crLancDisciplina"), "Selecione a disciplina", pack.disciplinas, a.disciplinaId);
+    preencherSelect($("crLancTurma"), "Selecione a turma", pack.turmas || [], a.turmaId);
+    pintarSelectAlunos();
+  }
+
+  function sincronizarLancamentoParaAno() {
+    const a = atual();
+    const escola = $("crLancEscola");
+    const disciplina = $("crLancDisciplina");
+    const turma = $("crLancTurma");
+    if (escola) a.escolaId = escola.value;
+    if (disciplina) a.disciplinaId = disciplina.value;
+    if (turma) a.turmaId = turma.value;
+    if ($("crEscola")) $("crEscola").value = a.escolaId || "";
+    if ($("crDisciplina")) $("crDisciplina").value = a.disciplinaId || "";
+    if ($("crTurma")) $("crTurma").value = a.turmaId || "";
+  }
+
+  function espelharContextoNoLancamento() {
+    const a = atual();
+    const marcar = (id, valor, ok) => {
+      const el = $(id);
+      if (!el) return;
+      el.value = ok ? valor : "";
+    };
+    marcar("crLancEscola", a.escolaId, pack.escolas.some((e) => e.id === a.escolaId));
+    marcar("crLancDisciplina", a.disciplinaId, pack.disciplinas.some((d) => d.id === a.disciplinaId));
+    marcar("crLancTurma", a.turmaId, (pack.turmas || []).some((t) => t.id === a.turmaId));
+    if ($("crLancAno") && ANOS.includes(anoAtual)) $("crLancAno").value = anoAtual;
+  }
+
+  function lancamentoVisivel() {
+    const box = $("crAplicacao");
+    return !!(box && !box.hidden);
+  }
+
   function mostrarBanco() {
     pararVoz();
     $("crAplicacao").hidden = true;
@@ -377,21 +473,35 @@
     marcarTela(false);
   }
 
-  function mostrarAplicacao() {
-    const info = identificacao();
-    $("crAplicacaoContexto").textContent = `${anoAtual} ano · ${info.escola} · ${info.turma} · ${info.disciplina}`;
+  function mostrarAplicacao(forcarRespostas) {
+    const a = atual();
     $("crBanco").hidden = true;
     $("crAplicacao").hidden = false;
     $("crLancamento").hidden = false;
+    pintarLancamentoContexto();
     const emEdicao = editIndex >= 0 ? a.students[editIndex] : null;
     const jaTem = document.querySelectorAll("#crRespostas .corretor-q").length;
     if (emEdicao) pintarRespostas(emEdicao.answers);
-    else if (jaTem !== a.questions.length) pintarRespostas();
+    else if (forcarRespostas || jaTem !== a.questions.length) pintarRespostas();
     pintarAlunos();
+    const aviso = $("crSemGabarito");
+    if (aviso) aviso.hidden = a.questions.length > 0;
     if (a.questions.length && a.students.length) gerarResultados(false);
     else $("crResultados").hidden = true;
     marcarTela(true);
     $("crAluno").focus();
+  }
+
+  function trocarAno(ano, permanecerLancamento) {
+    if (!ANOS.includes(ano) || ano === anoAtual) return;
+    if (permanecerLancamento || lancamentoVisivel()) sincronizarLancamentoParaAno();
+    gravarFormulario();
+    salvar();
+    anoAtual = ano;
+    editIndex = -1;
+    pintar();
+    if (permanecerLancamento) mostrarAplicacao(true);
+    else mostrarBanco();
   }
 
   function adicionarEscola() {
@@ -499,14 +609,62 @@
   }
 
   function selecionarAno(ano) {
-    if (!ANOS.includes(ano) || ano === anoAtual) return;
+    trocarAno(ano, false);
+  }
+
+  function adicionarAlunoCadastro() {
+    const nome = normalizarAluno($("crNovoAluno").value);
+    if (!nome) {
+      $("crNovoAluno").focus();
+      return;
+    }
+    const repetido = (pack.alunos || []).some((aluno) => aluno.nome.localeCompare(nome, "pt-BR", { sensitivity: "accent" }) === 0);
+    if (repetido) {
+      alert("Esse aluno já está cadastrado.");
+      return;
+    }
     gravarFormulario();
+    pack.alunos.push({
+      id: "a" + Date.now().toString(36) + Math.floor(Math.random() * 1000).toString(36),
+      nome,
+    });
+    pack.alunos.sort((x, y) => x.nome.localeCompare(y.nome, "pt-BR"));
+    $("crNovoAluno").value = "";
     salvar();
-    anoAtual = ano;
-    editIndex = -1;
-    $("crAluno").value = "";
-    pintar();
-    mostrarBanco();
+    pintarAlunosCadastro();
+    pintarSelectAlunos();
+  }
+
+  function excluirAlunoCadastro(id) {
+    const aluno = (pack.alunos || []).find((item) => item.id === id);
+    if (!aluno) return;
+    const uso = ANOS.filter((ano) => (pack.anos[ano].students || []).some((s) => s.alunoId === id || s.name === aluno.nome));
+    if (uso.length) {
+      const onde = uso.map((ano) => ano + " ano").join(", ");
+      const segue = confirm(`${aluno.nome} já tem respostas no ${onde}. O nome sai do cadastro. As respostas lançadas permanecem. Excluir?`);
+      if (!segue) return;
+    }
+    gravarFormulario();
+    pack.alunos = pack.alunos.filter((item) => item.id !== id);
+    salvar();
+    pintarAlunosCadastro();
+    pintarSelectAlunos();
+  }
+
+  function pintarAlunosCadastro() {
+    const ul = $("crAlunosLista");
+    if (!ul) return;
+    const alunos = pack.alunos || [];
+    if (!alunos.length) {
+      ul.innerHTML = "<li><span>Nenhum aluno cadastrado.</span></li>";
+      return;
+    }
+    ul.innerHTML = alunos.map((aluno) => `
+      <li>
+        <span>${esc(aluno.nome)}</span>
+        <button type="button" class="btn-compare corretor-excluir" data-del-aluno-cadastro="${esc(aluno.id)}">Excluir</button>
+      </li>
+    `).join("");
   }
 
   function configurarQuestoes() {
@@ -556,10 +714,20 @@
     });
   }
 
+  function alunoDoSelect() {
+    const sel = $("crAluno");
+    if (!sel || !sel.value) return null;
+    const cadastro = (pack.alunos || []).find((aluno) => aluno.id === sel.value);
+    if (cadastro) return { alunoId: cadastro.id, name: cadastro.nome };
+    const texto = sel.selectedOptions && sel.selectedOptions[0] ? sel.selectedOptions[0].textContent.trim() : "";
+    if (!texto) return null;
+    return { alunoId: "", name: texto };
+  }
+
   function salvarAluno() {
-    const nome = $("crAluno").value.trim();
-    if (!nome) {
-      alert("Informe o nome do aluno.");
+    const escolhido = alunoDoSelect();
+    if (!escolhido) {
+      alert("Selecione o aluno.");
       $("crAluno").focus();
       return;
     }
@@ -567,18 +735,23 @@
       alert("Salve o gabarito antes de lançar alunos.");
       return;
     }
+    if (lancamentoVisivel()) sincronizarLancamentoParaAno();
     gravarFormulario();
     const answers = lerRespostasDom();
-    if (editIndex >= 0) {
-      atual().students[editIndex] = { name: nome, answers };
+    const registro = { name: escolhido.name, alunoId: escolhido.alunoId, answers };
+    const lista = atual().students;
+    if (editIndex >= 0 && lista[editIndex]) {
+      lista[editIndex] = registro;
       editIndex = -1;
     } else {
-      atual().students.push({ name: nome, answers });
+      const idx = lista.findIndex((s) => (escolhido.alunoId && s.alunoId === escolhido.alunoId) || s.name === escolhido.name);
+      if (idx >= 0) lista[idx] = registro;
+      else lista.push(registro);
     }
     salvar();
-    $("crAluno").value = "";
     pintarRespostas();
     pintarAlunos();
+    pintarSelectAlunos();
     $("crListaBox").hidden = false;
     $("crAluno").focus();
   }
@@ -587,9 +760,9 @@
     const aluno = atual().students[index];
     if (!aluno) return;
     editIndex = index;
-    $("crAluno").value = aluno.name;
     pintarRespostas(aluno.answers);
     pintarAlunos();
+    pintarSelectAlunos();
     $("crLancamento").hidden = false;
     $("crAluno").focus();
   }
@@ -601,6 +774,7 @@
     salvar();
     pintarRespostas();
     pintarAlunos();
+    pintarSelectAlunos();
   }
 
   function gerarResultados(rolar) {
@@ -911,13 +1085,21 @@
       const btn = ev.target.closest("[data-del-turma]");
       if (btn) excluirTurma(btn.dataset.delTurma);
     });
+    $("crAddAlunoCadastro").addEventListener("click", adicionarAlunoCadastro);
+    $("crNovoAluno").addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter") adicionarAlunoCadastro();
+    });
+    $("crAlunosLista").addEventListener("click", (ev) => {
+      const btn = ev.target.closest("[data-del-aluno-cadastro]");
+      if (btn) excluirAlunoCadastro(btn.dataset.delAlunoCadastro);
+    });
     $("corretorAnos").addEventListener("click", (ev) => {
       const btn = ev.target.closest("[data-ano]");
       if (btn) selecionarAno(btn.dataset.ano);
     });
-    $("crEscola").addEventListener("change", () => { gravarFormulario(); salvar(); });
-    $("crDisciplina").addEventListener("change", () => { gravarFormulario(); salvar(); });
-    $("crTurma").addEventListener("change", () => { gravarFormulario(); salvar(); });
+    $("crEscola").addEventListener("change", () => { gravarFormulario(); salvar(); espelharContextoNoLancamento(); });
+    $("crDisciplina").addEventListener("change", () => { gravarFormulario(); salvar(); espelharContextoNoLancamento(); });
+    $("crTurma").addEventListener("change", () => { gravarFormulario(); salvar(); espelharContextoNoLancamento(); });
     ["crNome", "crData", "crMatriculados", "crNQuest"].forEach((id) => {
       $(id).addEventListener("change", () => { gravarFormulario(); salvar(); });
     });
@@ -952,9 +1134,14 @@
     $("crSalvarGabarito").addEventListener("click", salvarGabarito);
     $("crVoltarBanco").addEventListener("click", mostrarBanco);
     $("crSalvarAluno").addEventListener("click", salvarAluno);
-    $("crAluno").addEventListener("keydown", (ev) => {
-      if (ev.key === "Enter") salvarAluno();
+    ["crLancEscola", "crLancDisciplina", "crLancTurma"].forEach((id) => {
+      $(id).addEventListener("change", () => {
+        sincronizarLancamentoParaAno();
+        gravarFormulario();
+        salvar();
+      });
     });
+    $("crLancAno").addEventListener("change", () => trocarAno($("crLancAno").value, true));
     $("crLista").addEventListener("click", (ev) => {
       const ed = ev.target.closest("[data-edit-aluno]");
       const del = ev.target.closest("[data-del-aluno]");

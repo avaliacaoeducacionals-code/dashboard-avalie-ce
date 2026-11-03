@@ -197,6 +197,18 @@ body.corretor-solo .btn-compare.corretor-excluir:hover {
 .corretor-card { margin-bottom: 16px; }
 .corretor-card h2 { margin-top: 0; }
 .corretor-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+#crLancamento .corretor-grid { margin-bottom: 14px; }
+#crLancamento .corretor-grid select {
+  appearance: none;
+  -webkit-appearance: none;
+  min-width: 0;
+  padding: 8px 2.5rem 8px 10px;
+  background-color: var(--bg-2, #0c2430);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='none' stroke='%236d8794' stroke-width='1.6' stroke-linecap='round' d='M1 1.2 L6 6.2 L11 1.2'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px 8px;
+}
 .corretor-grid label, .corretor-card > label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
 .corretor-gabarito {
   display: grid;
