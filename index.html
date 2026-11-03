@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard Avalie.CE 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet" />
+  <script>
+    document.documentElement.dataset.tema = localStorage.getItem("avalie-tema") === "dia" ? "dia" : "noite";
+  </script>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo-frame logo-frame-side">
+          <img class="brand-logo" src="assets/logo-eixo-avaliacao.png" alt="Eixo de Avaliação" />
+        </div>
+        <div>
+          <strong>Eixo de Avaliação</strong>
+          <small>SAEP · Avalie.CE 2026.2</small>
+        </div>
+      </div>
+      <div class="tema-switch" role="group" aria-label="Aparência do dashboard">
+        <button type="button" id="btnTemaNoite" data-tema="noite">Noturno</button>
+        <button type="button" id="btnTemaDia" data-tema="dia">Dia</button>
+      </div>
+      <button type="button" id="btnModoSlide" class="btn-modo-slide" aria-pressed="false">Modo slide</button>
+      <nav class="nav">
+        <div class="nav-edicao nav-compare" id="navEdicaoAvalie">
+          <label for="selEdicaoAvalie">Avalie.CE</label>
+          <select id="selEdicaoAvalie" aria-label="Edição do Avalie.CE">
+            <option value="2">2º Avalie.CE</option>
+            <option value="1">1º Avalie.CE</option>
+          </select>
+        </div>
+        <button class="nav-btn active" data-page="geral">Visão geral</button>
+        <button class="nav-btn" data-page="escolas">Escolas · colocação</button>
+        <button class="nav-btn" data-page="descritores">Descritores</button>
+        <button class="nav-btn" data-page="turmas">Turmas</button>
+        <button class="nav-btn" data-page="alunos">Alunos</button>
+        <button class="nav-btn nav-compare" data-page="comparar">1º × 2º Avalie</button>
+        <button class="nav-btn nav-spaece" data-page="spaece">SPAECE 2025</button>
+        <button class="nav-btn nav-saep" data-page="saep1">1º SAEP</button>
+        <button class="nav-btn nav-diag" data-page="diag">Diagnóstica</button>
+        <button class="nav-btn nav-ideb" data-page="ideb">IDEB 2025</button>
+        <button class="nav-btn nav-proto" data-page="protocolo">Protocolo de Acompanhamento</button>
+        <button class="nav-btn nav-sit" data-page="situacao">Situação</button>
+        <button class="nav-btn nav-par" data-page="par">Emparelhar</button>
+        <button class="nav-btn nav-cartas" data-page="cartas">Cartas PDF</button>
+        <button class="nav-btn nav-rank" data-page="rank">Resultado ranqueado</button>
+        <button class="nav-btn nav-rankgeral" data-page="rankgeral">Ranking geral</button>
+        <button class="nav-btn nav-linhas" data-page="linhas">Gráficos de linhas</button>
+        <button class="nav-btn nav-consulta" data-page="consulta">Consulta de avaliação</button>
+      </nav>
+      <p class="sidebar-note" id="metaFonte"></p>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-brand">
+          <div class="logo-frame">
+            <img class="logo-eixo" src="assets/logo-eixo-avaliacao.png" alt="Eixo de Avaliação" />
+          </div>
+          <div class="topbar-copy">
+            <h1 id="pageTitle">Visão geral da rede</h1>
+            <p id="pageSubtitle">Resultados consolidados das planilhas escolares</p>
+          </div>
+          <div class="logo-frame">
+            <img class="logo-saep" src="assets/logo-saep.png" alt="SAEP — Sistema de Avaliação Educacional de Pacajus" />
+          </div>
+        </div>
+        <div class="filters">
+          <label>Ano
+            <select id="filtroAno"></select>
+          </label>
+          <label>Disciplina
+            <select id="filtroDisc"></select>
+          </label>
+          <label>Escola
+            <select id="filtroEscola"></select>
+          </label>
+          <button type="button" id="btnComparar" class="btn-compare">Comparar 1º × 2º Avalie</button>
+          <button type="button" id="btnRank" class="btn-compare">Resultado ranqueado</button>
+        </div>
+      </header>
+
+      <section id="page-geral" class="page">
+        <div class="kpis" id="kpis"></div>
+        <div class="grid-2">
+          <article class="card">
+            <h2 id="titSit">Padrão de desempenho</h2>
+            <p class="hint" id="hintSit"></p>
+            <div class="chart-donut"><canvas id="chartSit"></canvas></div>
+            <div id="wrapSit2ano" class="hidden" style="margin-top:18px">
+              <h2>Padrões do 2º ano — Português</h2>
+              <p class="hint">Desejável, Suficiente, Intermediário, Alf. incompleto e Crítico.</p>
+              <div class="chart-donut"><canvas id="chartSit2lp"></canvas></div>
+            </div>
+            <div id="wrapSit2mat" class="hidden" style="margin-top:18px">
+              <h2>Padrões do 2º ano — Matemática</h2>
+              <p class="hint">Avançado, Proficiente, Básico e Abaixo do básico.</p>
+              <div class="chart-donut"><canvas id="chartSit2mat"></canvas></div>
+            </div>
+          </article>
+          <article class="card">
+            <h2>Média por ano escolar</h2>
+            <div class="chart-cols"><canvas id="chartAno"></canvas></div>
+          </article>
+        </div>
+        <div class="grid-2">
+          <article class="card">
+            <h2>Português × Matemática</h2>
+            <div class="chart-cols"><canvas id="chartDisc"></canvas></div>
+          </article>
+          <article class="card">
+            <h2>Leitura da rede</h2>
+            <ul class="insights" id="insights"></ul>
+          </article>
+        </div>
+        <article class="card">
+          <h2>Colocação das escolas</h2>
+          <p class="hint" id="hintRankGeral">Todas as escolas do recorte, da 1ª à última colocação.</p>
+          <div class="table-wrap">
+            <table class="rank-table">
+              <thead>
+                <tr>
+                  <th>Colocação</th>
+                  <th>Escola</th>
+                  <th>Média</th>
+                  <th>Turmas</th>
+                  <th>Avaliados</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyRankGeral"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <section id="page-escolas" class="page hidden">
+        <article class="card">
+          <h2 id="titEscolas">Colocação das escolas</h2>
+          <p class="hint" id="hintEscolas">A distribuição de padrões segue a escala do filtro (ano e disciplina). Escalas diferentes nunca são misturadas na mesma barra.</p>
+          <div id="legendEscolas" class="sit-legend"></div>
+          <div id="wrapEscolas" class="chart-tall">
+            <canvas id="chartEscolas"></canvas>
+          </div>
+          <div class="table-wrap escolas-wrap">
+            <table class="escolas-table">
+              <thead id="theadEscolas"></thead>
+              <tbody id="tbodyEscolas"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <section id="page-descritores" class="page hidden">
+        <p class="hint" id="hintDesc"></p>
+        <div class="grid-2">
+          <article class="card">
+            <h2>Descritores mais críticos</h2>
+            <div class="chart-cols chart-cols-hab"><canvas id="chartDescPiores"></canvas></div>
+          </article>
+          <article class="card">
+            <h2>Descritores mais consolidados</h2>
+            <div class="chart-cols chart-cols-hab"><canvas id="chartDescMelhores"></canvas></div>
+          </article>
+        </div>
+        <article class="card">
+          <h2>Detalhamento por descritor</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Sigla</th>
+                  <th>Habilidade</th>
+                  <th>Ano</th>
+                  <th>Disciplina</th>
+                  <th>Itens</th>
+                  <th>Acerto</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyDesc"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <section id="page-turmas" class="page hidden">
+        <article class="card">
+          <h2>Desempenho por turma</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Escola</th>
+                  <th>Ano</th>
+                  <th>Turma</th>
+                  <th>Disciplina</th>
+                  <th>Alunos</th>
+                  <th>Média</th>
+                  <th>Padrão predominante</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyTurmas"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <section id="page-comparar" class="page hidden">
+        <div class="comp-banner">
+          <span class="comp-tag comp-tag-1">1º Avalie.CE 2026.1</span>
+          <strong>×</strong>
+          <span class="comp-tag comp-tag-2">2º Avalie.CE 2026.2</span>
+        </div>
+        <p class="hint" id="hintComparar"></p>
+        <div class="kpis" id="kpisComp"></div>
+        <div class="grid-2">
+          <article class="card">
+            <h2>Média por ano</h2>
+            <div class="chart-cols"><canvas id="chartCompAno"></canvas></div>
+          </article>
+          <article class="card">
+            <h2>Média por disciplina</h2>
+            <div class="chart-cols"><canvas id="chartCompDisc"></canvas></div>
+          </article>
+        </div>
+        <article class="card">
+          <h2>Padrões harmonizados</h2>
+          <p class="hint">Padrões harmonizados em 3 faixas: Defasagem (crítico/abaixo), Intermediário, Adequado (adequado/desejável/avançado/proficiente/suficiente). Comparação válida nos anos 2º, 5º e 9º.</p>
+          <div class="chart-cols"><canvas id="chartCompSit"></canvas></div>
+        </article>
+        <article class="card">
+          <h2>Quem subiu e quem desceu</h2>
+          <p class="hint">Variação = média do 2º Avalie − média do 1º Avalie. O 1º já é proficiência média CAEd; o 2º só será a mesma métrica quando existir HABILIDADE_DESEMPENHO 2026.2 na pasta.</p>
+          <div class="table-wrap escolas-wrap">
+            <table class="escolas-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Escola</th>
+                  <th>1º Avalie</th>
+                  <th>2º Avalie</th>
+                  <th>Variação</th>
+                  <th>Tendência</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyCompEscolas"></tbody>
+            </table>
+          </div>
+        </article>
+        <article class="card">
+          <h2>Recorte por ano e disciplina</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Ano</th>
+                  <th>Disciplina</th>
+                  <th>1º Avalie</th>
+                  <th>2º Avalie</th>
+                  <th>Variação</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyCompAnoDisc"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <section id="page-spaece" class="page hidden">
+        <div class="comp-banner">
+          <span class="comp-tag comp-tag-spaece">SPAECE Ensino Fundamental 2025</span>
+        </div>
+        <p class="hint" id="hintSpaece"></p>
+        <div class="filters" id="filtrosSpaece">
+          <label>Ano
+            <select id="filtroAnoSp"></select>
+          </label>
+          <label>Disciplina
+            <select id="filtroDiscSp"></select>
+          </label>
+          <label>Escola
+            <select id="filtroEscolaSp"></select>
+          </label>
+        </div>
+        <div class="kpis" id="kpisSpaece"></div>
+        <div class="grid-2">
+          <article class="card">
+            <h2>Padrão de desempenho</h2>
+            <p class="hint" id="hintSitSp"></p>
+            <div class="chart-cols"><canvas id="chartSitSp"></canvas></div>
+          </article>
+          <article class="card">
+            <h2>Proficiência por ano</h2>
+            <div class="chart-cols"><canvas id="chartAnoSp"></canvas></div>
+          </article>
+        </div>
+        <div class="grid-2">
+          <article class="card">
+            <h2>Português × Matemática</h2>
+            <div class="chart-cols"><canvas id="chartDiscSp"></canvas></div>
+          </article>
+          <article class="card">
+            <h2>Habilidades mais críticas</h2>
+            <div class="chart-cols chart-cols-hab"><canvas id="chartHabSp"></canvas></div>
+          </article>
+        </div>
+        <article class="card">
+          <h2>Colocação das escolas</h2>
+          <p class="hint">Proficiência média CAEd. Filtre o ano para não misturar a escala do 2º (cerca de 1000) com a do 5º e do 9º.</p>
+          <div class="table-wrap escolas-wrap">
+            <table class="escolas-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Escola</th>
+                  <th>Ano</th>
+                  <th>Disciplina</th>
+                  <th>Avaliados</th>
+                  <th>Proficiência</th>
+                  <th>Padrões</th>
+                </tr>
+              </thead>
+              <tbody id="tbodySpaeceEscolas"></tbody>
+            </table>
+          </div>
+        </article>
+        <article class="card">
+          <h2>Turmas</h2>
+          <p class="hint" id="hintTurmasSp">Alguns exports de turma não trazem o nome da escola.</p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Escola</th>
+                  <th>Ano</th>
+                  <th>Turma</th>
+                  <th>Disciplina</th>
+                  <th>Avaliados</th>
+                  <th>Proficiência</th>
+                  <th>Padrão predominante</th>
+                </tr>
+              </thead>
+              <tbody id="tbodySpaeceTurmas"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <section id="page-saep1" class="page hidden">
+        <div class="comp-banner">
+          <span class="comp-tag comp-tag-saep">1º SAEP — 0 a 10 por turma (LP e MAT), anos 1º a 9º</span>
+        </div>
+        <p class="hint" id="hintSaep1"></p>
+        <div class="filters" id="filtrosSaep1">
+          <label>Ano
+            <select id="filtroAnoN1"></select>
+          </label>
+          <label>Disciplina
+            <select id="filtroDiscN1"></select>
+          </label>
+          <label>Escola
+            <select id="filtroEscolaN1"></select>
+          </label>
+        </div>
+        <div class="kpis" id="kpisSaep1"></div>
+        <div class="grid-2">
+          <article class="card">
+            <h2>Colocação das escolas</h2>
+            <p class="hint">Média 0 a 10 das turmas no recorte (ano, disciplina e escola).</p>
+            <div class="chart-tall"><canvas id="chartSaep1Rank"></canvas></div>
+          </article>
+          <article class="card">
+            <h2>Português × Matemática por ano</h2>
+            <div class="chart-cols"><canvas id="chartSaep1Ano"></canvas></div>
+          </article>
+        </div>
+        <article class="card">
+          <h2>Escolas no recorte</h2>
+          <div class="table-wrap escolas-wrap">
+            <table class="escolas-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Escola</th>
+                  <th>Ano</th>
+                  <th>Turmas</th>
+                  <th>Português</th>
+                  <th>Matemática</th>
+                  <th>Média</th>
+                </tr>
+              </thead>
+              <tbody id="tbodySaep1"></tbody>
+            </table>
+          </div>
+        </article>
+        <article class="card">
+          <h2>Turmas</h2>
+          <p class="hint">Uma linha por turma e disciplina. Só LP e MAT (C.H e C.N ficam de fora).</p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Escola</th>
+                  <th>Ano</th>
+                  <th>Turma</th>
+                  <th>Disciplina</th>
+                  <th>Média 0–10</th>
+                </tr>
+              </thead>
+              <tbody id="tbodySaep1Turmas"></tbody>
+            </table>
+          </div>
+        </article>
+        <div class="kpis" id="kpisSaep1Geral"></div>
+        <article class="card">
+          <h2>Média geral da escola (sem ano)</h2>
+          <p class="hint">KPI da diagnóstica/Pasta1.xlsx — uma nota 0 a 10 por escola, sem recorte de ano ou disciplina.</p>
+          <div class="table-wrap escolas-wrap">
+            <table class="escolas-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Escola</th>
+                  <th>1º SAEP geral</th>
+                  <th>Diagnóstica</th>
+                  <th>Variação</th>
+                  <th>IDEB</th>
+                  <th>IDEB iniciais</th>
+                  <th>IDEB finais</th>
+                </tr>
+              </thead>
+              <tbody id="tbodySaep1Geral"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <section id="page-diag" class="page hidden">
+        <div class="comp-banner">
+          <span class="comp-tag comp-tag-diag">Diagnóstica — 0 a 10 por turma (LP e MAT), anos 1º a 9º</span>
+        </div>
+        <p class="hint" id="hintDiag"></p>
+        <div class="filters" id="filtrosDiag">
+          <label>Ano
+            <select id="filtroAnoN2"></select>
+          </label>
+          <label>Disciplina
+            <select id="filtroDiscN2"></select>
+          </label>
+          <label>Escola
+            <select id="filtroEscolaN2"></select>
+          </label>
+        </div>
+        <div class="kpis" id="kpisDiagCut"></div>
+        <div class="grid-2">
+          <article class="card">
+            <h2>Colocação das escolas</h2>
+            <p class="hint">Média 0 a 10 das turmas no recorte (ano, disciplina e escola).</p>
+            <div class="chart-tall"><canvas id="chartDiagTurmasRank"></canvas></div>
+          </article>
+          <article class="card">
+            <h2>Português × Matemática por ano</h2>
+            <div class="chart-cols"><canvas id="chartDiagAno"></canvas></div>
+          </article>
+        </div>
+        <article class="card">
+          <h2>Escolas no recorte</h2>
+          <div class="table-wrap escolas-wrap">
+            <table class="escolas-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Escola</th>
+                  <th>Ano</th>
+                  <th>Turmas</th>
+                  <th>Português</th>
+                  <th>Matemática</th>
+                  <th>Média</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyDiagRecorte"></tbody>
+            </table>
+          </div>
+        </article>
+        <article class="card">
+          <h2>Turmas</h2>
+          <p class="hint">Uma linha por turma e disciplina. Só LP e MAT (C.H e C.N ficam de fora).</p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Escola</th>
+                  <th>Ano</th>
+                  <th>Turma</th>
+                  <th>Disciplina</th>
+                  <th>Média 0–10</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyDiagTurmas"></tbody>
+            </table>
+          </div>
+        </article>
+        <div class="kpis" id="kpisDiag"></div>
+        <div class="grid-2">
+          <article class="card">
+            <h2>Colocação da Diagnóstica (média geral)</h2>
+            <p class="hint">KPI da Pasta1.xlsx — uma nota 0 a 10 por escola, sem recorte de ano ou disciplina.</p>
+            <div class="chart-tall"><canvas id="chartDiagRank"></canvas></div>
+          </article>
+          <article class="card">
+            <h2>Diagnóstica × 1º SAEP × IDEB</h2>
+            <div class="chart-tall"><canvas id="chartDiagComp"></canvas></div>
+          </article>
+        </div>
+        <article class="card">
+          <h2>Média geral da escola (sem ano)</h2>
+          <div class="table-wrap escolas-wrap">
+            <table class="escolas-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Escola</th>
+                  <th>Diagnóstica</th>
+                  <th>1º SAEP</th>
+                  <th>Variação</th>
+                  <th>IDEB</th>
+                  <th>IDEB iniciais</th>
+                  <th>IDEB finais</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyDiag"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <section id="page-ideb" class="page hidden">
+        <div class="comp-banner">
+          <span class="comp-tag comp-tag-ideb">IDEB 2025 — divulgação INEP (Pacajus)</span>
+        </div>
+        <p class="hint" id="hintIdeb"></p>
+        <div class="filters" id="filtrosIdeb">
+          <label>Etapa
+            <select id="filtroEtapaIdeb">
+              <option value="Todos">Todas</option>
+              <option value="AI">Anos iniciais</option>
+              <option value="AF">Anos finais</option>
+            </select>
+          </label>
+          <label>Escola
+            <select id="filtroEscolaIdeb"></select>
+          </label>
+        </div>
+        <div class="kpis" id="kpisIdeb"></div>
+        <div class="grid-2">
+          <article class="card">
+            <h2>Colocação IDEB 2025</h2>
+            <p class="hint">Nota observada (VL_OBSERVADO) no recorte de etapa.</p>
+            <div class="chart-tall"><canvas id="chartIdebRank"></canvas></div>
+          </article>
+          <article class="card">
+            <h2>2023 × 2025</h2>
+            <p class="hint">Mesma etapa. Escolas sem 2025 na divulgação ficam em branco.</p>
+            <div class="chart-tall"><canvas id="chartIdebAno"></canvas></div>
+          </article>
+        </div>
+        <article class="card">
+          <h2>Anos iniciais × anos finais</h2>
+          <p class="hint">IDEB 2025 das duas etapas, quando a escola tem as duas.</p>
+          <div class="chart-tall"><canvas id="chartIdebEtapa"></canvas></div>
+        </article>
+        <article class="card">
+          <h2>Escolas</h2>
+          <div class="table-wrap escolas-wrap">
+            <table class="escolas-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Escola</th>
+                  <th>IDEB 2025</th>
+                  <th>IDEB 2023</th>
+                  <th>Variação</th>
+                  <th>Iniciais 2025</th>
+                  <th>Iniciais 2023</th>
+                  <th>Finais 2025</th>
+                  <th>Finais 2023</th>
+                  <th>LP 2025</th>
+                  <th>MAT 2025</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyIdeb"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <section id="page-protocolo" class="page hidden">
+        <div class="comp-banner">
+          <span class="comp-tag comp-tag-proto">Protocolo de Acompanhamento — 1º ao 9º ano</span>
+        </div>
+        <p class="hint" id="hintProto"></p>
+        <div class="filters" id="filtrosProto">
+          <label>Ano
+            <select id="filtroAnoProto"></select>
+          </label>
+          <label>Disciplina
+            <select id="filtroDiscProto"></select>
+          </label>
+          <label>Escola
+            <select id="filtroEscolaProto"></select>
+          </label>
+          <label>Turma
+            <select id="filtroTurmaProto"></select>
+          </label>
+        </div>
+        <div class="kpis" id="kpisProto"></div>
+        <div class="grid-2">
+          <article class="card">
+            <h2>Colocação das escolas</h2>
+            <p class="hint">Todas as escolas do recorte, da 1ª à última colocação. Média = BH58 da planilha (soma de acertos / nomes × questões), uma média por turma e disciplina.</p>
+            <div class="chart-tall"><canvas id="chartProtoRank"></canvas></div>
+          </article>
+          <article class="card">
+            <h2>Português × Matemática</h2>
+            <p class="hint">BH58 de Português e de Matemática no recorte (não mistura as duas). Escrita só aparece se o filtro for Escrita.</p>
+            <div class="chart-cols"><canvas id="chartProtoDisc"></canvas></div>
+          </article>
+        </div>
+        <article class="card">
+          <h2>Escolas no recorte</h2>
+          <p class="hint" id="hintProtoRank"></p>
+          <div class="table-wrap escolas-wrap">
+            <table class="escolas-table">
+              <thead>
+                <tr>
+                  <th>Colocação</th>
+                  <th>Escola</th>
+                  <th>Turmas</th>
+                  <th>Avaliados</th>
+                  <th>Faltas</th>
+                  <th>NEE</th>
+                  <th>Português</th>
+                  <th>Matemática</th>
+                  <th>% no recorte</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyProtoEscolas"></tbody>
+            </table>
+          </div>
+        </article>
+        <article class="card">
+          <h2>Turmas</h2>
+            <p class="hint">Uma linha por turma e disciplina. % acerto = BH58 daquela aba da planilha.</p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Escola</th>
+                  <th>Ano</th>
+                  <th>Turma</th>
+                  <th>Disciplina</th>
+                  <th>Avaliados</th>
+                  <th>Faltas</th>
+                  <th>NEE</th>
+                  <th>% acerto</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyProtoTurmas"></tbody>
+            </table>
+          </div>
+        </article>
+        <article class="card">
+          <h2>Descritores SPAECE/SAEB</h2>
+          <p class="hint" id="hintProtoDesc">Percentual de acerto por descritor, quando a planilha preencheu a linha de descritores.</p>
+          <div class="chart-cols chart-cols-hab"><canvas id="chartProtoDesc"></canvas></div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Disciplina</th>
+                  <th>Descritor</th>
+                  <th>Itens</th>
+                  <th>% acerto</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyProtoDesc"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <section id="page-situacao" class="page hidden">
+        <div class="comp-banner">
+          <span class="comp-tag comp-tag-proto">Situação — intervenção a partir do Protocolo (Português e Matemática)</span>
+        </div>
+        <p class="hint no-print">Leitura pedagógica das turmas e escolas do Protocolo de Acompanhamento. Os percentuais de acerto são os mesmos da aba Protocolo (média simples das turmas na escola). Não há nomes de professor ou coordenador nas planilhas: a ação é pelo papel (sala, coordenação, direção, SME). Use <b>Imprimir / PDF</b> em A4 paisagem; no Chrome, marque <b>Gráficos de fundo</b> (Background graphics) para o PDF sair colorido.</p>
+        <div class="filters no-print" id="filtrosSit">
+          <label>Ano
+            <select id="filtroAnoSit" aria-label="Ano escolar da situação"></select>
+          </label>
+          <label>Disciplina
+            <select id="filtroDiscSit" aria-label="Disciplina da situação">
+              <option value="Ambas">LP e MAT</option>
+              <option value="Português">Português</option>
+              <option value="Matemática">Matemática</option>
+            </select>
+          </label>
+          <label>Escola
+            <select id="filtroEscolaSit" aria-label="Escola da situação"></select>
+          </label>
+          <button type="button" id="btnPrintSit" class="btn-compare">Imprimir / PDF</button>
+        </div>
+        <div id="sitPrintArea">
+          <header class="rank-print-brand">
+            <p class="rank-print-rede">Rede Municipal de Pacajus</p>
+            <h2 id="sitPrintTitulo">Situação — intervenções necessárias e emergenciais</h2>
+            <p class="hint" id="sitPrintMeta"></p>
+          </header>
+          <article class="card sit-limiares">
+            <h2>Como lemos o resultado</h2>
+            <p class="hint" id="hintSitLimiar">Faixas sobre o percentual de acerto de Português e Matemática. A média da escola é a média simples das turmas (mesmo critério do Protocolo). 0% e não lançado entram nessa média, como na aba Protocolo.</p>
+            <div class="sit-legend sit-legend-int" id="legendSitInt"></div>
+          </article>
+          <div class="kpis kpis-sit" id="kpisSit"></div>
+          <article class="card">
+            <h2>Níveis de ação</h2>
+            <p class="hint">Quem conduz a intervenção, sem nomes pessoais (não constam no Protocolo).</p>
+            <div class="sit-niveis" id="niveisSit"></div>
+          </article>
+          <article class="card sit-card-emerg">
+            <h2>Emergencial — intervenção pedagógica imediata</h2>
+            <p class="hint" id="hintSitEmerg">Turmas e escolas com percentual de acerto muito baixo, grande diferença entre Português e Matemática ou turma bem abaixo da média da própria escola.</p>
+            <h3 class="sit-sub">Turmas</h3>
+            <div class="table-wrap">
+              <table class="sit-table">
+                <thead>
+                  <tr>
+                    <th>Escola</th>
+                    <th>Ano</th>
+                    <th>Turma</th>
+                    <th>LP</th>
+                    <th>MAT</th>
+                    <th>Por quê</th>
+                    <th>Possíveis problemáticas</th>
+                    <th>Quem atua</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodySitEmergTurmas"></tbody>
+              </table>
+            </div>
+            <h3 class="sit-sub">Escolas</h3>
+            <div class="table-wrap">
+              <table class="sit-table">
+                <thead>
+                  <tr>
+                    <th>Escola</th>
+                    <th>Ano</th>
+                    <th>Turmas</th>
+                    <th>LP</th>
+                    <th>MAT</th>
+                    <th>Por quê</th>
+                    <th>Possíveis problemáticas</th>
+                    <th>Quem atua</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodySitEmergEscolas"></tbody>
+              </table>
+            </div>
+          </article>
+          <article class="card sit-card-nec">
+            <h2>Necessária — acompanhamento e reforço</h2>
+            <p class="hint" id="hintSitNec">Abaixo de 50% ou abaixo da média da rede, sem configurar emergência. Apoio ao professor da turma e à coordenação pedagógica.</p>
+            <h3 class="sit-sub">Turmas</h3>
+            <div class="table-wrap">
+              <table class="sit-table">
+                <thead>
+                  <tr>
+                    <th>Escola</th>
+                    <th>Ano</th>
+                    <th>Turma</th>
+                    <th>LP</th>
+                    <th>MAT</th>
+                    <th>Por quê</th>
+                    <th>Possíveis problemáticas</th>
+                    <th>Quem atua</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodySitNecTurmas"></tbody>
+              </table>
+            </div>
+            <h3 class="sit-sub">Escolas</h3>
+            <div class="table-wrap">
+              <table class="sit-table">
+                <thead>
+                  <tr>
+                    <th>Escola</th>
+                    <th>Ano</th>
+                    <th>Turmas</th>
+                    <th>LP</th>
+                    <th>MAT</th>
+                    <th>Por quê</th>
+                    <th>Possíveis problemáticas</th>
+                    <th>Quem atua</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodySitNecEscolas"></tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="page-par" class="page hidden">
+        <ol class="timeline" aria-label="Ordem das avaliações">
+          <li><span>1</span>Diagnóstica</li>
+          <li><span>2</span>1º SAEP</li>
+          <li><span>3</span>1º Avalie.CE</li>
+          <li><span>4</span>2º Avalie.CE</li>
+          <li><span>5</span>IDEB 2025</li>
+          <li><span>6</span>SPAECE 2025</li>
+        </ol>
+        <p class="hint" id="hintPar"></p>
+        <div class="filters" id="filtrosPar">
+          <label>Ano
+            <select id="filtroAnoPar"></select>
+          </label>
+          <label>Disciplina
+            <select id="filtroDiscPar"></select>
+          </label>
+          <label>Escola
+            <select id="filtroEscolaPar"></select>
+          </label>
+        </div>
+        <div class="kpis kpis-6" id="kpisPar"></div>
+        <div class="grid-2">
+          <article class="card">
+            <h2>Diagnóstica → 1º SAEP → IDEB 2025</h2>
+            <p class="hint">Escala 0 a 10. Diagnóstica e 1º SAEP são média geral. O IDEB segue o ano filtrado (iniciais = 2º/4º/5º; finais = 8º/9º).</p>
+            <div class="chart-tall"><canvas id="chartPar10"></canvas></div>
+          </article>
+          <article class="card">
+            <h2>1º Avalie.CE → 2º Avalie.CE</h2>
+            <p class="hint">1º Avalie = proficiência média CAEd 2026.1. 2º Avalie = proficiência média CAEd 2026.2 quando o export HABILIDADE_DESEMPENHO estiver na pasta; hoje ainda é % BH58 das planilhas escolares.</p>
+            <div class="chart-tall"><canvas id="chartParAvalie"></canvas></div>
+          </article>
+        </div>
+        <article class="card">
+          <h2>SPAECE 2025</h2>
+          <p class="hint">Proficiência média CAEd no recorte. Filtre o ano para não misturar escalas.</p>
+          <div class="chart-tall"><canvas id="chartParSpaece"></canvas></div>
+        </article>
+        <article class="card">
+          <h2>Escolas emparelhadas</h2>
+          <p class="hint">Ordem da linha do tempo. Diagnóstica e 1º SAEP são média geral. Avalie e SPAECE seguem o filtro de ano/disciplina. IDEB 2025 vem da divulgação INEP (Pacajus).</p>
+          <div class="table-wrap escolas-wrap">
+            <table class="escolas-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Escola</th>
+                  <th>Diagnóstica</th>
+                  <th>1º SAEP</th>
+                  <th>1º Avalie.CE</th>
+                  <th>2º Avalie.CE</th>
+                  <th>IDEB 2025</th>
+                  <th>SPAECE 2025</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyPar"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <section id="page-cartas" class="page hidden">
+        <p class="hint">A carta emparelhada junta Diagnóstica, 1º SAEP, 1º Avalie, 2º Avalie, Protocolo, IDEB e SPAECE na mesma tabela, escola a escola. A <b>sequência de resultados</b> mostra <b>crescimento</b> e <b>decrescimento</b> só entre avaliações da mesma escala (Diagnóstica → 1º SAEP e 1º Avalie → 2º Avalie). O IDEB entra só como nota, sem variação. Há cartas de Diagnóstica, 1º SAEP e Protocolo de Acompanhamento por ano e disciplina. O Protocolo entra com % de acerto (1º ao 9º ano, LP e MAT). No diálogo de impressão, escolha <b>Salvar como PDF</b> (A4; as emparelhadas saem em paisagem). Marque <b>Gráficos de fundo</b> (Background graphics) para o PDF sair colorido.</p>
+        <div class="filters" id="filtrosCartas">
+          <label>Avaliação
+            <select id="filtroTipoCarta">
+              <option value="par">Emparelhadas</option>
+              <option value="todas">Todas</option>
+              <option value="diag">Diagnóstica</option>
+              <option value="saep">1º SAEP</option>
+              <option value="avalie1">1º Avalie.CE</option>
+              <option value="avalie2">2º Avalie.CE</option>
+              <option value="protocolo">Protocolo de Acompanhamento</option>
+              <option value="ideb">IDEB 2025</option>
+              <option value="spaece">SPAECE 2025</option>
+            </select>
+          </label>
+          <label>Ano
+            <select id="filtroAnoCarta">
+              <option value="Todos">Todos</option>
+            </select>
+          </label>
+          <button type="button" id="btnPrintTodas" class="btn-compare">Imprimir / PDF (visíveis)</button>
+        </div>
+        <div id="gradeCartas" class="grade-cartas"></div>
+      </section>
+
+      <section id="page-rank" class="page hidden">
+        <p class="hint no-print">Escolha a avaliação e o ano. Aparecem só escolas com dados nesse recorte, em Português e Matemática, com os mesmos números já usados no dashboard. Cada tabela traz o <b>Geral do município</b> (no Protocolo, média simples das escolas listadas naquele ano e disciplina; nas demais avaliações, média da rede no recorte), fora da colocação. Use <b>Imprimir / PDF</b> para salvar em A4. No diálogo, marque <b>Gráficos de fundo</b> (Background graphics) para o PDF sair colorido.</p>
+        <div class="filters no-print" id="filtrosRank">
+          <label>Avaliação
+            <select id="filtroAvalRank" aria-label="Avaliação do resultado ranqueado">
+              <option value="avalie2">2º Avalie.CE</option>
+              <option value="avalie1">1º Avalie.CE</option>
+              <option value="saep1">1º SAEP</option>
+              <option value="diag">Diagnóstica</option>
+              <option value="protocolo">Protocolo de Acompanhamento</option>
+            </select>
+          </label>
+          <label>Ano
+            <select id="filtroAnoRank" aria-label="Ano escolar do resultado ranqueado"></select>
+          </label>
+          <label>Disciplina
+            <select id="filtroDiscRank" aria-label="Disciplina do resultado ranqueado">
+              <option value="Ambas">LP e MAT</option>
+              <option value="Português">Português</option>
+              <option value="Matemática">Matemática</option>
+            </select>
+          </label>
+          <button type="button" id="btnPrintRank" class="btn-compare">Imprimir / PDF</button>
+        </div>
+        <div id="rankPrintArea">
+          <header class="rank-print-brand">
+            <p class="rank-print-rede">Rede Municipal de Pacajus</p>
+            <h2 id="rankPrintTitulo">Resultado ranqueado</h2>
+            <p class="hint" id="rankPrintMeta"></p>
+          </header>
+          <div id="rankTables" class="rank-tables"></div>
+        </div>
+      </section>
+
+      <section id="page-rankgeral" class="page hidden">
+        <div class="comp-banner">
+          <span class="comp-tag comp-tag-proto">Ranking geral — Protocolo de Acompanhamento (1º ao 9º, só LP e MAT)</span>
+        </div>
+        <p class="hint no-print">Aba da barra lateral, logo depois de <b>Resultado ranqueado</b>. Junta o Protocolo do 1º ao 9º ano em uma colocação por escola. Só Português e Matemática (sem Ciências nem Escrita). Nomes oficiais (<code>canon_escola</code>): Deputado Jonas entra como EMTI José Mateus Barroso. Ano sem planilha não entra na média. Use <b>Imprimir / PDF</b> em A4 paisagem; no Chrome, marque <b>Gráficos de fundo</b>. Se a tabela sair em branco, pressione <b>F5</b> e imprima de novo.</p>
+        <div class="filters no-print" id="filtrosRankGeral">
+          <button type="button" id="btnPrintRankGeral" class="btn-compare">Imprimir / PDF</button>
+        </div>
+        <div id="rankGeralPrintArea">
+          <header class="rank-print-brand">
+            <p class="rank-print-rede">Rede Municipal de Pacajus</p>
+            <h2 id="rankGeralPrintTitulo">Ranking geral — Protocolo 1º ao 9º</h2>
+            <p class="hint" id="rankGeralPrintMeta"></p>
+          </header>
+          <article class="card rankg-formula">
+            <h2>Fórmula</h2>
+            <p class="hint" id="hintRankGeralFormula">Para cada escola entram todas as <b>médias de turma</b> do Protocolo, de 1º a 9º, em Português e em Matemática: cada turma LP é uma nota e cada turma MAT é outra. Não se inventa ano nem turma. <b>n notas</b> é a quantidade dessas médias de turma (não ano × 2). <b>n anos</b> continua sendo a quantidade de anos distintos. <b>Média da escola = média aritmética simples dessas notas</b> (soma ÷ n notas), a mesma regra oficial de média das turmas, em todas as escolas. O KPI da escola na Araci Gonzaga (7º LP 60,5% e MAT 31,3%) permanece nas outras abas; neste ranking o 7º entra pelas turmas. O <b>Geral do município</b> é a média das médias das escolas, fora da colocação.</p>
+          </article>
+          <div class="kpis" id="kpisRankGeral"></div>
+          <article class="card">
+            <h2>Colocação das escolas</h2>
+            <p class="hint" id="hintRankGeralTab">Abra o nome da escola para ver n turmas, n notas, LP e MAT por ano. Anos sem Protocolo não aparecem.</p>
+            <div class="table-wrap escolas-wrap">
+              <table class="rank-table" id="tabelaRankGeral">
+                <thead>
+                  <tr>
+                    <th>Posição</th>
+                    <th>Escola</th>
+                    <th>Média geral</th>
+                    <th>LP geral</th>
+                    <th>MAT geral</th>
+                    <th>n anos</th>
+                    <th>n notas</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodyRankGeralProto"></tbody>
+                <tfoot id="tfootRankGeralProto"></tfoot>
+              </table>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="page-linhas" class="page hidden">
+        <div class="comp-banner">
+          <span class="comp-tag">Gráficos de linhas — sequência do emparelhamento</span>
+        </div>
+        <p class="hint no-print">Um gráfico com a ordem das Cartas emparelhadas: <b>Diagnóstica → 1º SAEP → 1º Avalie → 2º Avalie → Protocolo → IDEB 2025</b>. Português e Matemática são linhas; o IDEB entra só como ponto, sem rótulo de crescimento. Notas 0 a 10 (Diagnóstica, 1º SAEP e IDEB) são ×10 só no traço, para alinhar com Avalie (0 a 100) e Protocolo (%). Tooltip e rótulos mostram a nota original. Sem dados = ponto omitido, sem zero inventado; a linha continua e liga os pontos vizinhos. Filtros: ano, escola e município. Use <b>Imprimir / PDF</b> em A4 paisagem. No Chrome, marque <b>Gráficos de fundo</b> (Background graphics). Se o gráfico sair em branco, pressione <b>F5</b> e imprima de novo.</p>
+        <div class="filters no-print" id="filtrosLinhas">
+          <label>Recorte
+            <select id="filtroRecorteLinha" aria-label="Município ou escola">
+              <option value="municipio">Município (rede)</option>
+              <option value="escola">Escola</option>
+            </select>
+          </label>
+          <label>Ano
+            <select id="filtroAnoLinha" aria-label="Ano escolar dos gráficos de linhas"></select>
+          </label>
+          <label>Escola
+            <select id="filtroEscolaLinha" aria-label="Escola dos gráficos de linhas"></select>
+          </label>
+          <label>Disciplina
+            <select id="filtroDiscLinha" aria-label="Disciplina dos gráficos de linhas">
+              <option value="Ambas">LP e MAT</option>
+              <option value="Português">Português</option>
+              <option value="Matemática">Matemática</option>
+            </select>
+          </label>
+          <button type="button" id="btnPrintLinhas" class="btn-compare">Imprimir / PDF</button>
+        </div>
+        <div id="linhasPrintArea">
+          <header class="rank-print-brand">
+            <p class="rank-print-rede">Rede Municipal de Pacajus</p>
+            <h2 id="linhasPrintTitulo">Gráficos de linhas — sequência de avaliações</h2>
+            <p class="hint" id="linhasPrintMeta"></p>
+          </header>
+          <div class="kpis kpis-linha" id="kpisLinhas"></div>
+          <article class="card" id="cardLinhaSeq">
+            <h2>Sequência do emparelhamento</h2>
+            <p class="hint" id="hintLinhaSeq">Mesma ordem das colunas das Cartas emparelhadas. Rótulos e tooltip com a nota original. Sem dados = ponto omitido; a linha liga os pontos vizinhos.</p>
+            <div class="chart-linha chart-linha-seq"><canvas id="chartLinhaSeq" aria-label="Gráfico de linhas na sequência do emparelhamento"></canvas></div>
+          </article>
+          <article class="card" id="cardTabelaLinha">
+            <h2>Valores oficiais do recorte</h2>
+            <p class="hint">Crescimento e decrescimento só na mesma escala. IDEB entra como nota, sem variação.</p>
+            <div class="table-wrap">
+              <table class="rank-table">
+                <thead>
+                  <tr>
+                    <th>Avaliação</th>
+                    <th>Escala</th>
+                    <th>Português</th>
+                    <th>Matemática</th>
+                    <th>Variação LP</th>
+                    <th>Variação MAT</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodyLinhas"></tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="page-consulta" class="page hidden">
+        <div class="comp-banner">
+          <span class="comp-tag">Consulta de avaliação — instrumento do 2º simulado</span>
+        </div>
+        <p class="hint no-print" id="hintConsultaPagina">Instrumento (questões e análise pedagógica) do <b>2º Protocolo / 2º simulado LP-MAT</b> na mesma aba: filtre <b>2º</b>, <b>5º</b> ou <b>9º</b> ano. Não são notas de escola. Descritores da matriz SPAECE/CAED do ano escolhido. O PDF não traz gabarito: as chaves foram resolvidas pedagogicamente. Use os filtros de ano, disciplina e descritor. <b>Imprimir / PDF</b> em A4 retrato (sai o ano selecionado); no Chrome, marque <b>Gráficos de fundo</b>. Depois de alterar filtros, <b>F5</b> se a lista não atualizar.</p>
+        <div class="filters no-print" id="filtrosConsulta">
+          <label>Ano
+            <select id="filtroAnoConsulta" aria-label="Ano da consulta de avaliação">
+              <option value="2º">2º ano</option>
+              <option value="5º">5º ano</option>
+              <option value="9º">9º ano</option>
+            </select>
+          </label>
+          <label>Disciplina
+            <select id="filtroDiscConsulta" aria-label="Disciplina da consulta de avaliação">
+              <option value="Ambas">LP e MAT</option>
+              <option value="LP">Língua Portuguesa</option>
+              <option value="MAT">Matemática</option>
+            </select>
+          </label>
+          <label>Descritor SPAECE
+            <select id="filtroDescConsulta" aria-label="Descritor SPAECE"></select>
+          </label>
+          <button type="button" id="btnPrintConsulta" class="btn-compare">Imprimir / PDF</button>
+        </div>
+        <div id="consultaPrintArea">
+          <header class="rank-print-brand">
+            <p class="rank-print-rede">Rede Municipal de Pacajus</p>
+            <h2 id="consultaPrintTitulo">2º Protocolo de Acompanhamento — 2º simulado LP-MAT</h2>
+            <p class="hint" id="consultaPrintMeta"></p>
+          </header>
+          <div class="kpis kpis-consulta" id="kpisConsulta"></div>
+          <p class="hint" id="hintConsultaFonte"></p>
+          <div id="consultaLista" class="consulta-lista"></div>
+        </div>
+      </section>
+
+      <section id="page-alunos" class="page hidden">
+        <article class="card">
+          <div class="table-head">
+            <h2>Lista de alunos</h2>
+            <input id="buscaAluno" type="search" placeholder="Buscar aluno, escola ou turma" />
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Aluno</th>
+                  <th>Escola</th>
+                  <th>Turma</th>
+                  <th>Disciplina</th>
+                  <th>Acertos</th>
+                  <th>%</th>
+                  <th>Situação</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyAlunos"></tbody>
+            </table>
+          </div>
+          <p class="hint" id="alunosInfo"></p>
+        </article>
+      </section>
+    </main>
+  </div>
+  <div id="slideOverlay" class="slide-overlay hidden" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-label="Modo slide">
+    <div class="slide-stage" id="slideStage">
+      <div class="slide-inner is-current">
+        <header class="slide-brand">
+          <div class="logo-frame logo-frame-side">
+            <img class="brand-logo" src="assets/logo-eixo-avaliacao.png" alt="Eixo de Avaliação" />
+          </div>
+          <div>
+            <strong>Eixo de Avaliação</strong>
+            <small>SAEP · Pacajus</small>
+          </div>
+          <div class="logo-frame logo-frame-side slide-brand-saep">
+            <img class="logo-saep" src="assets/logo-saep.png" alt="SAEP" />
+          </div>
+        </header>
+        <p class="slide-kicker"></p>
+        <h2 class="slide-title"></h2>
+        <p class="slide-meta"></p>
+        <p class="slide-value"></p>
+        <p class="slide-hint"></p>
+        <ol class="slide-rank"></ol>
+        <p class="slide-esc">Tela cheia · qualquer clique, tecla ou movimento do mouse volta ao dashboard · Esc</p>
+      </div>
+    </div>
+  </div>
+  <script src="dados.js"></script>
+  <script src="dados1.js"></script>
+  <script src="dados_spaece.js"></script>
+  <script src="dados_diag.js"></script>
+  <script src="dados_diag_turmas.js"></script>
+  <script src="dados_saep1_turmas.js"></script>
+  <script src="dados_ideb.js"></script>
+  <script src="dados_protocolo.js"></script>
+  <script src="dados_consulta_aval.js"></script>
+  <script src="dados_consulta_aval_2ano.js"></script>
+  <script src="dados_consulta_aval_5ano.js"></script>
+  <script src="habilidades.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
