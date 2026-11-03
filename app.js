@@ -5085,6 +5085,7 @@ function titulosPagina(page) {
     rank: ["Resultado ranqueado", "Colocação das escolas por avaliação e ano — só Português e Matemática"],
     rankgeral: ["Ranking geral", "Protocolo de Acompanhamento 1º ao 9º — média simples das notas de turma (LP e MAT), depois colocação"],
     linhas: ["Gráficos de linhas", "Sequência do emparelhamento (todas as avaliações) por ano, escola ou município — LP e MAT"],
+    corretor: ["Corretor por ano", "Avaliação isolada do 1º ao 9º ano, com escola cadastrada. Respostas em 1, 2, 3, 4 e 5. Tudo fica só neste navegador."],
     consulta: [
       "Consulta de avaliação",
       consultaAnoSel() === "2º"
@@ -5129,6 +5130,8 @@ function goto(page) {
   document.body.classList.toggle("page-rankgeral", page === "rankgeral");
   document.body.classList.toggle("page-linhas", page === "linhas");
   document.body.classList.toggle("page-consulta", page === "consulta");
+  document.body.classList.toggle("page-corretor", page === "corretor");
+  if (page === "corretor" && typeof corretorAoAbrir === "function") corretorAoAbrir();
   const titles = titulosPagina(page);
   $("pageTitle").textContent = titles[0];
   $("pageSubtitle").textContent = titles[1];

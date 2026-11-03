@@ -56,6 +56,7 @@
         <button class="nav-btn nav-rankgeral" data-page="rankgeral">Ranking geral</button>
         <button class="nav-btn nav-linhas" data-page="linhas">Gráficos de linhas</button>
         <button class="nav-btn nav-consulta" data-page="consulta">Consulta de avaliação</button>
+        <button class="nav-btn nav-corretor" data-page="corretor">Corretor por ano</button>
       </nav>
       <p class="sidebar-note" id="metaFonte"></p>
     </aside>
@@ -1081,6 +1082,112 @@
         </div>
       </section>
 
+      <section id="page-corretor" class="page hidden">
+        <p class="hint">Cada ano guarda a própria avaliação neste navegador. As listas de escolas e de disciplinas valem para todos os anos. Nomes de alunos, gabarito, escolas e disciplinas não são enviados ao GitHub. As respostas são números: 1, 2, 3 e 4. Se a questão tiver 5 opções, a quinta é 5. Verdadeiro ou falso continua V e F.</p>
+        <article class="card corretor-card">
+          <h2>Escolas cadastradas</h2>
+          <p class="hint">Cadastro único deste navegador. Escolha, em cada ano, qual escola fez a avaliação.</p>
+          <div class="corretor-escola-add">
+            <input id="crNovaEscola" type="text" placeholder="Nome da escola" aria-label="Nome da escola para cadastrar" />
+            <button type="button" id="crAddEscola" class="btn-compare">Adicionar escola</button>
+          </div>
+          <ul id="crEscolasLista" class="corretor-escolas"></ul>
+        </article>
+        <article class="card corretor-card">
+          <h2>Disciplinas cadastradas</h2>
+          <p class="hint">Cadastro único deste navegador. Português e Matemática já vêm sugeridas. Escolha, em cada ano, a disciplina da avaliação.</p>
+          <div class="corretor-escola-add">
+            <input id="crNovaDisciplina" type="text" placeholder="Nome da disciplina" aria-label="Nome da disciplina para cadastrar" />
+            <button type="button" id="crAddDisciplina" class="btn-compare">Adicionar disciplina</button>
+          </div>
+          <ul id="crDisciplinasLista" class="corretor-escolas"></ul>
+        </article>
+        <div class="corretor-anos" id="corretorAnos" role="tablist" aria-label="Ano da avaliação"></div>
+        <article class="card corretor-card">
+          <h2>1. Dados da avaliação</h2>
+          <div class="corretor-grid">
+            <label>Escola da avaliação
+              <select id="crEscola" aria-label="Escola da avaliação deste ano"></select>
+            </label>
+            <label>Disciplina da avaliação
+              <select id="crDisciplina" aria-label="Disciplina da avaliação deste ano"></select>
+            </label>
+            <label>Nome da avaliação
+              <input id="crNome" type="text" placeholder="Ex.: Avaliação de Matemática" />
+            </label>
+            <label>Data
+              <input id="crData" type="date" />
+            </label>
+            <label>Alunos matriculados
+              <input id="crMatriculados" type="number" min="0" />
+            </label>
+            <label>Número de questões
+              <input id="crNQuest" type="number" min="1" max="60" value="10" />
+            </label>
+          </div>
+        </article>
+        <article class="card corretor-card">
+          <h2>2. Escalas de proficiência</h2>
+          <div id="crEscalas"></div>
+          <button type="button" id="crAddEscala" class="btn-compare">Adicionar nível</button>
+        </article>
+        <p><button type="button" id="crConfigurar" class="btn-compare">Configurar questões e gabarito</button></p>
+        <article class="card corretor-card" id="crGabaritoBox">
+          <h2>3. Gabarito oficial</h2>
+          <p class="hint">1 = primeira opção, 2 = segunda, 3 = terceira, 4 = quarta. A quinta opção, quando existir, é 5.</p>
+          <div class="corretor-gabarito" id="crGabarito"></div>
+          <button type="button" id="crSalvarGabarito" class="btn-compare">Salvar gabarito</button>
+        </article>
+        <article class="card corretor-card" id="crLancamento" hidden>
+          <h2>4. Lançamento das respostas</h2>
+          <label>Nome do aluno
+            <input id="crAluno" type="text" placeholder="Nome completo" />
+          </label>
+          <div class="corretor-voz">
+            <button type="button" id="crVozIniciar" class="btn-compare">Ditar</button>
+            <button type="button" id="crVozPausar" class="btn-compare" disabled>Pausar</button>
+            <button type="button" id="crVozParar" class="btn-compare" disabled>Parar</button>
+          </div>
+          <p class="hint" id="crVozTexto">Diga “um 1”, “dois 3” ou “questão 1: 2”.</p>
+          <div class="corretor-gabarito" id="crRespostas"></div>
+          <button type="button" id="crSalvarAluno" class="btn-compare">Salvar respostas do aluno</button>
+        </article>
+        <article class="card corretor-card" id="crListaBox" hidden>
+          <h2>Alunos lançados (<span id="crQtdAlunos">0</span>)</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Nome</th><th>Respostas</th><th></th></tr>
+              </thead>
+              <tbody id="crLista"></tbody>
+            </table>
+          </div>
+          <button type="button" id="crGerar" class="btn-compare">Gerar relatórios</button>
+        </article>
+        <div id="crResultados" hidden>
+          <div class="corretor-result-head">
+            <div>
+              <h2 id="crTituloResultado">Resultado do ano</h2>
+              <p class="hint" id="crMetaResultado"></p>
+            </div>
+            <button type="button" id="crPdf" class="btn-compare">Exportar PDF</button>
+          </div>
+          <div id="crDashboardTop">
+            <div class="kpis" id="crKpis"></div>
+            <div class="grid-2">
+              <article class="card"><canvas id="crChartQ"></canvas></article>
+              <article class="card"><canvas id="crChartP"></canvas></article>
+            </div>
+          </div>
+          <article class="card" id="crMatrizBox">
+            <h2>Matriz de desempenho</h2>
+            <div class="table-wrap">
+              <table class="corretor-matriz" id="crMatriz"></table>
+            </div>
+          </article>
+        </div>
+      </section>
+
       <section id="page-alunos" class="page hidden">
         <article class="card">
           <div class="table-head">
@@ -1146,5 +1253,9 @@
   <script src="dados_consulta_aval_5ano.js"></script>
   <script src="habilidades.js"></script>
   <script src="app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="corretor.js"></script>
 </body>
 </html>
