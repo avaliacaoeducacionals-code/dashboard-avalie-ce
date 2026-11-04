@@ -10,7 +10,7 @@
   <script>
     document.documentElement.dataset.tema = localStorage.getItem("avalie-tema") === "dia" ? "dia" : "noite";
   </script>
-  <link rel="stylesheet" href="styles.css?v=eixo23" />
+  <link rel="stylesheet" href="styles.css?v=eixo24" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
 <body class="capa-ativa">
@@ -39,14 +39,14 @@
             <span>Avaliações da rede, acompanhamento, resultados e o banco.</span>
             <span class="capa-btn">Abrir</span>
           </button>
-          <a class="capa-card" id="abrirRealizarCapa" href="corretor.html?realizar=1&amp;v=eixo23" target="avalieCorretor">
+          <a class="capa-card" id="abrirRealizarCapa" href="corretor.html?realizar=1&amp;v=eixo24" target="avalieCorretor">
             <strong>Realizar a avaliação</strong>
             <span>Abre o lançamento, na mesma janela do corretor.</span>
             <span class="capa-btn">Abrir</span>
           </a>
-          <button type="button" class="capa-card" data-capa-grupo="capaGrupoRes">
+          <button type="button" class="capa-card" id="abrirResultadosCapa" data-capa-grupo="capaGrupoRes">
             <strong>Resultados</strong>
-            <span>Ainda sem itens nesta tela.</span>
+            <span>Consulta do relatório da turma, com login da escola.</span>
             <span class="capa-btn">Abrir</span>
           </button>
         </div>
@@ -66,7 +66,7 @@
             <span>Protocolo, situação, emparelhar e alunos.</span>
             <span class="capa-btn">Abrir</span>
           </button>
-          <a class="capa-card" id="abrirCorretorCapa" href="corretor.html?v=eixo23" target="avalieCorretor">
+          <a class="capa-card" id="abrirCorretorCapa" href="corretor.html?v=eixo24" target="avalieCorretor">
             <strong>Banco da avaliação</strong>
             <span>Abre o corretor, do 1º ao 9º ano.</span>
             <span class="capa-btn">Abrir</span>
@@ -185,7 +185,40 @@
       <div class="capa-palco capa-grupo" id="capaGrupoRes" hidden>
         <button type="button" class="capa-voltar" data-capa-voltar="capaCinco">Voltar</button>
         <p class="capa-secretaria">Resultados</p>
-        <p class="capa-vazio">Ainda não há itens nesta tela.</p>
+        <div class="res-painel">
+          <form id="resLogin" class="res-card" autocomplete="on" novalidate>
+            <h2>Resultados</h2>
+            <p>Informe o login e a senha da escola.</p>
+            <label>Login
+              <input id="resLoginCampo" name="username" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" />
+            </label>
+            <label>Senha
+              <input id="resSenhaCampo" name="password" type="password" autocomplete="current-password" />
+            </label>
+            <p id="resErro" class="res-erro" role="alert" aria-live="polite"></p>
+            <button type="submit" class="capa-btn">Entrar</button>
+          </form>
+          <div id="resConsulta" class="res-card" hidden>
+            <div class="res-topo">
+              <h2>Consulta do relatório</h2>
+              <button type="button" id="resSair" class="capa-btn">Sair</button>
+            </div>
+            <p id="resEscolaFixa" class="res-escola-fixa" hidden></p>
+            <div class="res-grade">
+              <label id="resEscolaBox">Escola
+                <select id="resEscola" aria-label="Escola do relatório"></select>
+              </label>
+              <label>Ano
+                <select id="resAno" aria-label="Ano do relatório"></select>
+              </label>
+              <label>Turma
+                <select id="resTurma" aria-label="Turma do relatório"></select>
+              </label>
+            </div>
+            <button type="button" id="resGerar" class="capa-btn">Gerar relatório</button>
+            <div id="resRelatorio" class="res-relatorio"></div>
+          </div>
+        </div>
       </div>
     </section>
   </div>
@@ -232,8 +265,8 @@
         <button class="nav-btn nav-rankgeral" data-page="rankgeral">Ranking geral</button>
         <button class="nav-btn nav-linhas" data-page="linhas">Gráficos de linhas</button>
         <button class="nav-btn nav-consulta" data-page="consulta">Consulta de avaliação</button>
-        <a class="nav-btn nav-corretor" id="abrirCorretor" href="corretor.html?v=eixo23" target="avalieCorretor">Eixo de avaliação</a>
-        <a class="nav-btn nav-corretor" id="abrirRealizar" href="corretor.html?realizar=1&v=eixo23" target="avalieCorretor">Realizar a avaliação</a>
+        <a class="nav-btn nav-corretor" id="abrirCorretor" href="corretor.html?v=eixo24" target="avalieCorretor">Eixo de avaliação</a>
+        <a class="nav-btn nav-corretor" id="abrirRealizar" href="corretor.html?realizar=1&v=eixo24" target="avalieCorretor">Realizar a avaliação</a>
       </nav>
       <p class="sidebar-note" id="metaFonte"></p>
     </aside>
@@ -1324,6 +1357,8 @@
   <script src="dados_consulta_aval_2ano.js"></script>
   <script src="dados_consulta_aval_5ano.js"></script>
   <script src="habilidades.js"></script>
-  <script src="app.js?v=eixo23"></script>
+  <script src="acesso.js?v=eixo24"></script>
+  <script src="app.js?v=eixo24"></script>
+  <script src="resultados.js?v=eixo24"></script>
 </body>
 </html>

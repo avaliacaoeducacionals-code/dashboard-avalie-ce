@@ -2286,3 +2286,49 @@ html.realizar-ok #realizarSair { display: inline-flex; }
   .logo-saep { max-height: 60px; max-width: 180px; }
   .btn-compare { width: 100%; }
 }
+
+.res-painel {
+  width: min(100%, 920px);
+  margin: 14px auto 0;
+  text-align: left;
+}
+.res-card {
+  background: #fff;
+  color: #102027;
+  border-radius: 18px;
+  padding: 22px 20px 18px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+}
+.res-card h2, .res-card h3 { margin: 0; color: #102027; }
+.res-card p { margin: 8px 0 0; }
+.res-card label { display: flex; flex-direction: column; gap: 6px; font-weight: 700; }
+.res-card input, .res-card select {
+  font: inherit;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #c9ddd2;
+  background: #fff;
+  color: #102027;
+}
+.res-card input:focus-visible, .res-card select:focus-visible { outline: 3px solid #142018; outline-offset: 2px; }
+.res-erro { min-height: 1.2em; margin: 8px 0; color: #9d1c1c; font-weight: 700; }
+.res-topo, .res-acoes { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.res-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin: 14px 0;
+}
+.res-escola-fixa { margin: 10px 0 0; font-weight: 700; }
+#resConsulta[hidden], #resLogin[hidden], #resEscolaBox[hidden], #resEscolaFixa[hidden] { display: none !important; }
+.res-relatorio { margin-top: 16px; }
+.res-bloco { margin-top: 16px; padding-top: 8px; border-top: 1px solid #e4eee8; }
+.res-kpis { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+.res-kpi { background: #e7f0ea; border-radius: 12px; padding: 8px 12px; min-width: 108px; }
+.res-kpi span { display: block; font-size: 12px; font-weight: 700; color: #4d6a78; }
+.res-kpi strong { font-size: 18px; }
+.res-aviso { color: #4d6a78; }
+.res-tabela { width: 100%; border-collapse: collapse; }
+.res-tabela th, .res-tabela td { border-bottom: 1px solid #e4eee8; padding: 6px 8px; text-align: left; }
+.res-tabela th { font-size: 13px; }
+#resGerar:disabled { opacity: 0.55; cursor: not-allowed; }
