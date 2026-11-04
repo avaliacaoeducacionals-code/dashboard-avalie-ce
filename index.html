@@ -9,37 +9,11 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet" />
   <script>
     document.documentElement.dataset.tema = localStorage.getItem("avalie-tema") === "dia" ? "dia" : "noite";
-    try {
-      var brutoAcesso = sessionStorage.getItem("avalie-acesso");
-      if (brutoAcesso && JSON.parse(brutoAcesso).login) document.documentElement.classList.add("acesso-ok");
-    } catch (e) {}
   </script>
-  <style>
-    html:not(.acesso-ok) .capa,
-    html:not(.acesso-ok) .app,
-    html:not(.acesso-ok) #slideOverlay,
-    html:not(.acesso-ok) body.corretor-solo .main { display: none !important; }
-    html.acesso-ok #acesso { display: none !important; }
-  </style>
-  <link rel="stylesheet" href="styles.css?v=eixo21" />
+  <link rel="stylesheet" href="styles.css?v=eixo22" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
 <body class="capa-ativa">
-  <div id="acesso" class="acesso">
-    <form id="acessoForm" class="acesso-card" autocomplete="on" novalidate>
-      <img src="assets/logo-eixo-avaliacao.png" alt="Eixo de Avaliação" />
-      <h1>Entrar</h1>
-      <p>Informe o login e a senha.</p>
-      <label>Login
-        <input id="acessoLogin" name="username" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" />
-      </label>
-      <label>Senha
-        <input id="acessoSenha" name="password" type="password" autocomplete="current-password" />
-      </label>
-      <p id="acessoErro" class="acesso-erro" role="alert" aria-live="polite"></p>
-      <button type="submit" class="capa-btn">Entrar</button>
-    </form>
-  </div>
   <div class="capa" id="capa">
     <header class="capa-topo">
       <div class="capa-topo-marca">
@@ -49,10 +23,6 @@
           <strong>Eixo de Avaliação</strong>
           <small>Pacajus</small>
         </div>
-      </div>
-      <div class="acesso-sessao">
-        <span class="acesso-escola-nome"></span>
-        <button type="button" class="btn-sair" data-acesso-sair>Sair</button>
       </div>
     </header>
 
@@ -69,7 +39,7 @@
             <span>Avaliações da rede, acompanhamento, resultados e o banco.</span>
             <span class="capa-btn">Abrir</span>
           </button>
-          <a class="capa-card" id="abrirRealizarCapa" href="corretor.html?realizar=1&amp;v=eixo21" target="avalieCorretor">
+          <a class="capa-card" id="abrirRealizarCapa" href="corretor.html?realizar=1&amp;v=eixo22" target="avalieCorretor">
             <strong>Realizar a avaliação</strong>
             <span>Abre o lançamento, na mesma janela do corretor.</span>
             <span class="capa-btn">Abrir</span>
@@ -96,7 +66,7 @@
             <span>Protocolo, situação, emparelhar e alunos.</span>
             <span class="capa-btn">Abrir</span>
           </button>
-          <a class="capa-card" id="abrirCorretorCapa" href="corretor.html?v=eixo21" target="avalieCorretor">
+          <a class="capa-card" id="abrirCorretorCapa" href="corretor.html?v=eixo22" target="avalieCorretor">
             <strong>Banco da avaliação</strong>
             <span>Abre o corretor, do 1º ao 9º ano.</span>
             <span class="capa-btn">Abrir</span>
@@ -262,8 +232,8 @@
         <button class="nav-btn nav-rankgeral" data-page="rankgeral">Ranking geral</button>
         <button class="nav-btn nav-linhas" data-page="linhas">Gráficos de linhas</button>
         <button class="nav-btn nav-consulta" data-page="consulta">Consulta de avaliação</button>
-        <a class="nav-btn nav-corretor" id="abrirCorretor" href="corretor.html?v=eixo21" target="avalieCorretor">Eixo de avaliação</a>
-        <a class="nav-btn nav-corretor" id="abrirRealizar" href="corretor.html?realizar=1&v=eixo21" target="avalieCorretor">Realizar a avaliação</a>
+        <a class="nav-btn nav-corretor" id="abrirCorretor" href="corretor.html?v=eixo22" target="avalieCorretor">Eixo de avaliação</a>
+        <a class="nav-btn nav-corretor" id="abrirRealizar" href="corretor.html?realizar=1&v=eixo22" target="avalieCorretor">Realizar a avaliação</a>
       </nav>
       <p class="sidebar-note" id="metaFonte"></p>
     </aside>
@@ -276,10 +246,6 @@
           </div>
           <div class="topbar-copy">
             <button type="button" id="btnVoltarCapa" class="btn-voltar-capa">Voltar ao início</button>
-            <div class="acesso-sessao">
-              <span class="acesso-escola-nome"></span>
-              <button type="button" class="btn-sair" data-acesso-sair>Sair</button>
-            </div>
             <h1 id="pageTitle">Visão geral da rede</h1>
             <p id="pageSubtitle">Resultados consolidados das planilhas escolares</p>
           </div>
@@ -1358,8 +1324,6 @@
   <script src="dados_consulta_aval_2ano.js"></script>
   <script src="dados_consulta_aval_5ano.js"></script>
   <script src="habilidades.js"></script>
-  <script src="acesso.js?v=eixo21"></script>
-  <script src="acesso-login.js?v=eixo21"></script>
-  <script src="app.js?v=eixo21"></script>
+  <script src="app.js?v=eixo22"></script>
 </body>
 </html>
