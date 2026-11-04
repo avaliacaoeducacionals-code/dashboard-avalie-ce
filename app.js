@@ -5164,31 +5164,13 @@ const CAPA_FOTOS = [
 ];
 
 let capaFotoIdx = 0;
-let capaFotoManual = false;
 
 function aplicarFotoCapa(idx) {
   const foto = CAPA_FOTOS[idx];
   if (!foto) return;
   capaFotoIdx = idx;
-  const poster = $("capaPoster");
   const fundo = $("capaFundo");
-  const hero = $("capaHero");
-  const legenda = $("capaLegenda");
-  if (poster) {
-    poster.src = foto.src;
-    poster.alt = foto.alt;
-  }
   if (fundo) fundo.src = foto.src;
-  if (legenda) legenda.textContent = foto.legenda;
-  if (hero) {
-    hero.classList.remove("is-spaece", "is-ideb", "is-servidor");
-    hero.classList.add("is-" + foto.id);
-  }
-  document.querySelectorAll("[data-capa-foto]").forEach((btn) => {
-    const on = Number(btn.dataset.capaFoto) === idx;
-    btn.classList.toggle("is-on", on);
-    btn.setAttribute("aria-pressed", on ? "true" : "false");
-  });
 }
 
 function mostrarCinco() {
@@ -6200,12 +6182,6 @@ if (!DATA) {
       setupFilters();
     });
   });
-  document.querySelectorAll("[data-capa-foto]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      capaFotoManual = true;
-      aplicarFotoCapa(Number(btn.dataset.capaFoto));
-    });
-  });
   if ($("btnVoltarCapa")) $("btnVoltarCapa").addEventListener("click", mostrarCapa);
   document.querySelectorAll("[data-capa-grupo]").forEach((btn) => {
     btn.addEventListener("click", () => abrirGrupoCapa(btn.dataset.capaGrupo));
@@ -6216,7 +6192,6 @@ if (!DATA) {
   aplicarFotoCapa(0);
   if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
     setInterval(() => {
-      if (capaFotoManual) return;
       if (!document.body.classList.contains("capa-ativa")) return;
       aplicarFotoCapa((capaFotoIdx + 1) % CAPA_FOTOS.length);
     }, 8000);
