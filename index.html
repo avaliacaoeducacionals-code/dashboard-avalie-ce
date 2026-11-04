@@ -10,7 +10,7 @@
   <script>
     document.documentElement.dataset.tema = localStorage.getItem("avalie-tema") === "dia" ? "dia" : "noite";
   </script>
-  <link rel="stylesheet" href="styles.css?v=eixo15" />
+  <link rel="stylesheet" href="styles.css?v=eixo16" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
 <body class="capa-ativa">
@@ -29,8 +29,10 @@
     <section class="capa-hero is-spaece" id="capaHero" aria-label="Capa">
       <img class="capa-fundo" id="capaFundo" src="assets/capa-spaece-run.jpg" alt="" aria-hidden="true" />
       <div class="capa-palco" id="capaCinco">
-        <p class="capa-secretaria">Secretaria de Educação de Pacajus</p>
-        <h1 class="capa-titulo" tabindex="-1">Eixo de Avaliação, Pacajus</h1>
+        <div class="capa-marca-mun">
+          <img class="capa-brasao" src="assets/brasao-pacajus.png" alt="Brasão do município de Pacajus" />
+          <h1 class="capa-titulo" tabindex="-1">Secretaria de Educação de Pacajus</h1>
+        </div>
         <div class="capa-cinco">
           <button type="button" class="capa-card" data-capa-grupo="capaGrupoRede">
             <strong>Avaliações da rede</strong>
