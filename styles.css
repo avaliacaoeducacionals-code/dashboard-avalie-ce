@@ -184,8 +184,10 @@ body.corretor-solo .btn-compare.corretor-excluir:hover {
 }
 body.corretor-solo .btn-compare:disabled,
 body.corretor-solo .btn-compare.corretor-excluir:disabled,
+body.corretor-solo .btn-compare.corretor-refazer:disabled,
 body.corretor-solo .btn-compare:disabled:hover,
-body.corretor-solo .btn-compare.corretor-excluir:disabled:hover {
+body.corretor-solo .btn-compare.corretor-excluir:disabled:hover,
+body.corretor-solo .btn-compare.corretor-refazer:disabled:hover {
   background: #6d858c;
   color: #eef5f7;
   cursor: not-allowed;
@@ -394,6 +396,34 @@ html:not([data-tema="dia"]) select option { color: #e8f2f6; background-color: #1
   cursor: pointer;
   font: inherit;
   font-weight: 700;
+  filter: none;
+}
+.corretor-abrir-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 12px;
+  overflow: visible;
+}
+#crAbrirRefazer {
+  display: inline-block;
+  visibility: visible;
+  position: static;
+}
+body.corretor-solo .btn-compare.corretor-refazer {
+  background: #c47a2a;
+  color: #fff;
+}
+body.corretor-solo .btn-compare.corretor-refazer:hover {
+  filter: none;
+  background: #a86622;
+}
+body.corretor-solo .btn-compare.corretor-refazer:disabled,
+body.corretor-solo .btn-compare.corretor-refazer:disabled:hover {
+  background: #6d858c;
+  color: #eef5f7;
+  cursor: not-allowed;
   filter: none;
 }
 .corretor-abrir {

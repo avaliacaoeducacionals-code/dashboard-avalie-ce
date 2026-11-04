@@ -6034,7 +6034,7 @@ if (!DATA) {
     btn.addEventListener("click", () => goto(btn.dataset.page));
   });
   function abrirCorretorJanela(ev, realizar) {
-    const versao = "eixo7";
+    const versao = "eixo9";
     const url = realizar ? "corretor.html?realizar=1&v=" + versao : "corretor.html?v=" + versao;
     let janela = null;
     let reaproveitou = false;

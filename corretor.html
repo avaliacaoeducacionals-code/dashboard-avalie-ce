@@ -10,7 +10,7 @@
   <script>
     document.documentElement.dataset.tema = localStorage.getItem("avalie-tema") === "dia" ? "dia" : "noite";
   </script>
-  <link rel="stylesheet" href="styles.css?v=eixo7" />
+  <link rel="stylesheet" href="styles.css?v=eixo9" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
 <body class="corretor-solo">
@@ -64,7 +64,10 @@
         <button type="button" data-sit="Transferência" aria-pressed="false">Transferência</button>
       </div>
       <div class="corretor-gabarito" id="crAbrirRespostas"></div>
-      <button type="button" id="crAbrirSalvar" class="btn-compare" disabled>Salvar alteração</button>
+      <div class="corretor-abrir-acoes">
+        <button type="button" id="crAbrirSalvar" class="btn-compare" disabled>Salvar alteração</button>
+        <button type="button" id="crAbrirRefazer" class="btn-compare corretor-refazer" disabled>Refazer a prova</button>
+      </div>
     </article>
     <p class="hint">Cada ano guarda a própria avaliação neste navegador. No lançamento, o nome é o da escola, do ano e da turma escolhidos. As respostas são números: 1, 2, 3 e 4. Se a questão tiver 5 opções, a quinta é 5. Verdadeiro ou falso continua V e F.</p>
     <article class="card corretor-card">
@@ -247,6 +250,6 @@
   <script src="habilidades.js?v=descritores1"></script>
   <script src="dados_rede.js?v=rede1"></script>
   <script src="dados_nominal.js?v=nomes1"></script>
-  <script src="corretor.js?v=eixo7"></script>
+  <script src="corretor.js?v=eixo9"></script>
 </body>
 </html>

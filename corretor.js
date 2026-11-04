@@ -106,7 +106,10 @@
         Object.keys(data.fechamentos).forEach((chave) => {
           const item = data.fechamentos[chave];
           if (!item || typeof item !== "object" || Array.isArray(item)) return;
-          base.fechamentos[chave] = { quando: item.quando ? String(item.quando) : "" };
+          const reabertos = Array.isArray(item.reabertos)
+            ? item.reabertos.map((id) => String(id || "")).filter(Boolean)
+            : [];
+          base.fechamentos[chave] = { quando: item.quando ? String(item.quando) : "", reabertos };
         });
       }
       base.turmas = deduplicarTurmas(base.turmas, base.anos, base.alunos, base.fechamentos);
@@ -361,6 +364,33 @@
     return !!mapaFechamentos()[chaveFechamento(atualCtx)];
   }
 
+  function idReabertura(aluno) {
+    const id = (aluno && (aluno.alunoId || aluno.id)) || "";
+    const nome = fold((aluno && (aluno.name || aluno.nome)) || "");
+    return id || (nome ? "nome:" + nome : "");
+  }
+
+  function listaReabertos(ctx) {
+    const item = mapaFechamentos()[chaveFechamento(ctx || contextoLancamento())];
+    if (!item) return [];
+    if (!Array.isArray(item.reabertos)) item.reabertos = [];
+    return item.reabertos;
+  }
+
+  function alunoReabertoAgora(escolhido) {
+    const aluno = escolhido || alunoDoSelect();
+    const marca = idReabertura(aluno);
+    if (!marca) return false;
+    const ctx = contextoLancamento();
+    if (!lancamentoFinalizado(ctx)) return false;
+    return listaReabertos(ctx).includes(marca);
+  }
+
+  function turmaTravadaNoLancamento() {
+    if (alunoReabertoAgora()) return false;
+    return lancamentoFinalizado();
+  }
+
   function mesmaDisciplina(student) {
     const disc = (atual().disciplinaId) || "";
     if (!student || !student.disciplinaId || !disc) return true;
@@ -557,7 +587,7 @@
         if (texto) texto.textContent = "Todos os alunos desta turma estão salvos.";
       }
     }
-    aplicarTravaLancamento(r.finalizado);
+    aplicarTravaLancamento(r.finalizado && !alunoReabertoAgora());
   }
 
   function soltarEdicaoLancamento() {
@@ -995,7 +1025,7 @@
         </div>
       `;
     }).join("");
-    aplicarTravaLancamento(lancamentoFinalizado());
+    aplicarTravaLancamento(turmaTravadaNoLancamento());
   }
 
   function pintarAlunos() {
@@ -1114,7 +1144,7 @@
       const salvo = atual().students[idx];
       pintarRespostas(salvo.answers);
       aplicarSituacao(situacaoAluno(salvo));
-      aplicarTravaLancamento(lancamentoFinalizado());
+      aplicarTravaLancamento(turmaTravadaNoLancamento());
       return;
     }
     aplicarSituacao("");
@@ -1484,10 +1514,6 @@
   }
 
   function salvarAluno() {
-    if (lancamentoFinalizado()) {
-      avisarLancamentoFechado();
-      return;
-    }
     const escolhido = alunoDoSelect();
     if (!escolhido) {
       alert("Selecione o aluno.");
@@ -1500,6 +1526,11 @@
     }
     if (lancamentoVisivel()) sincronizarLancamentoParaAno();
     gravarFormulario();
+    const reaberto = alunoReabertoAgora(escolhido);
+    if (lancamentoFinalizado() && !reaberto) {
+      avisarLancamentoFechado();
+      return;
+    }
     const answers = lerRespostasDom();
     const situacao = lerSituacaoDom();
     const registro = {
@@ -1515,6 +1546,10 @@
       sincronizarSituacaoDoAluno();
       return;
     }
+    const abertos = listaReabertos(contextoLancamento());
+    const marcaSalva = idReabertura(escolhido);
+    const posReaberto = abertos.indexOf(marcaSalva);
+    if (posReaberto >= 0) abertos.splice(posReaberto, 1);
     lista.push(registro);
     editIndex = -1;
     salvar();
@@ -1556,6 +1591,8 @@
     document.querySelectorAll("#crAbrirSituacao [data-sit]").forEach((el) => { el.disabled = true; });
     const salvarBtn = $("crAbrirSalvar");
     if (salvarBtn) salvarBtn.disabled = true;
+    const refazerBtn = $("crAbrirRefazer");
+    if (refazerBtn) refazerBtn.disabled = true;
     const fechado = $("crAbrirFechado");
     if (fechado) fechado.hidden = true;
     const status = $("crAbrirStatus");
@@ -1606,6 +1643,8 @@
     aplicarSituacao(situacaoAluno(salvo), "crAbrirSituacao");
     document.querySelectorAll("#crAbrirSituacao [data-sit]").forEach((el) => { el.disabled = !!travado; });
     if (salvarBtn) salvarBtn.disabled = !!travado || !(atual().questions || []).length;
+    const refazerBtn = $("crAbrirRefazer");
+    if (refazerBtn) refazerBtn.disabled = false;
     const status = $("crAbrirStatus");
     if (status) status.textContent = "";
   }
@@ -1705,6 +1744,43 @@
     if ($("crAbrirAluno")) $("crAbrirAluno").value = String(idx);
     mostrarResultadoAbrir();
     if ($("crAbrirStatus")) $("crAbrirStatus").textContent = "Alteração salva.";
+  }
+
+  function refazerProva() {
+    const sel = $("crAbrirAluno");
+    const status = $("crAbrirStatus");
+    if (!sel || sel.value === "") {
+      if (status) status.textContent = "Selecione o aluno.";
+      return;
+    }
+    const idx = Number(sel.value);
+    const lista = atual().students || [];
+    const salvo = lista[idx];
+    if (!salvo || !mesmaDisciplina(salvo)) {
+      if (status) status.textContent = "Não há resultado salvo para este aluno.";
+      return;
+    }
+    const info = identificacao();
+    const nome = salvo.name || "este aluno";
+    const segue = confirm(
+      `Refazer a prova de ${nome} em ${info.disciplina}?\n\nO resultado anterior deste aluno, nesta disciplina, será excluído: respostas, nota e situação (N.D, Falta ou Transferência). O cadastro do aluno, o gabarito e os outros alunos permanecem.`
+    );
+    if (!segue) return;
+    const ainda = (atual().students || [])[idx];
+    if (!ainda || ainda !== salvo) return;
+    const ctx = contextoLancamento();
+    if (lancamentoFinalizado(ctx)) {
+      const abertos = listaReabertos(ctx);
+      const marca = idReabertura(salvo);
+      if (marca && !abertos.includes(marca)) abertos.push(marca);
+    }
+    atual().students.splice(idx, 1);
+    salvar();
+    pintarAlunos();
+    pintarFinalizacao();
+    if ($("crAbrirAluno")) $("crAbrirAluno").value = "";
+    pintarAlunosAbrir();
+    if ($("crAbrirStatus")) $("crAbrirStatus").textContent = "Resultado excluído. Este aluno pode fazer a prova de novo.";
   }
 
   function disciplinasDoRelatorio() {
@@ -2094,7 +2170,7 @@
   }
 
   function aplicarFala(texto) {
-    if (lancamentoFinalizado() || alunoJaSalvoNoLancamento()) return;
+    if (turmaTravadaNoLancamento() || alunoJaSalvoNoLancamento()) return;
     let fala = texto.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     if (/\b(PARAR|FINALIZAR)\b/.test(fala)) {
       pararVoz();
@@ -2138,7 +2214,7 @@
   }
 
   function iniciarVoz() {
-    if (lancamentoFinalizado() || alunoJaSalvoNoLancamento()) return;
+    if (turmaTravadaNoLancamento() || alunoJaSalvoNoLancamento()) return;
     if (!recognition) {
       $("crVozTexto").textContent = "Este navegador não oferece ditado. Use Chrome.";
       return;
@@ -2336,7 +2412,7 @@
       boxSit.addEventListener("click", (ev) => {
         const btn = ev.target.closest("[data-sit]");
         if (!btn || btn.disabled) return;
-        if (lancamentoFinalizado()) {
+        if (turmaTravadaNoLancamento()) {
           avisarLancamentoFechado();
           return;
         }
@@ -2355,6 +2431,7 @@
     });
     $("crAbrirAluno").addEventListener("change", mostrarResultadoAbrir);
     $("crAbrirSalvar").addEventListener("click", salvarAlteracaoResultado);
+    $("crAbrirRefazer").addEventListener("click", refazerProva);
     const boxAbrirSit = $("crAbrirSituacao");
     if (boxAbrirSit) {
       boxAbrirSit.addEventListener("click", (ev) => {
@@ -2375,7 +2452,7 @@
     else mostrarBanco();
   }
 
-  window.CORRETOR_VER = "eixo7";
+  window.CORRETOR_VER = "eixo9";
   window.corretorIrPara = function corretorIrPara(realizar) {
     iniciar();
     if (realizar) mostrarAplicacao();
