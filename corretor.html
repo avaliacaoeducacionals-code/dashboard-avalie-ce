@@ -10,7 +10,7 @@
   <script>
     document.documentElement.dataset.tema = localStorage.getItem("avalie-tema") === "dia" ? "dia" : "noite";
   </script>
-  <link rel="stylesheet" href="styles.css?v=eixo5" />
+  <link rel="stylesheet" href="styles.css?v=eixo7" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
 <body class="corretor-solo">
@@ -223,19 +223,7 @@
         </div>
         <button type="button" id="crPdf" class="btn-compare">Exportar PDF</button>
       </div>
-      <div id="crDashboardTop">
-        <div class="kpis" id="crKpis"></div>
-        <div class="grid-2">
-          <article class="card"><canvas id="crChartQ"></canvas></article>
-          <article class="card"><canvas id="crChartP"></canvas></article>
-        </div>
-      </div>
-      <article class="card" id="crMatrizBox">
-        <h2>Matriz de desempenho</h2>
-        <div class="table-wrap">
-          <table class="corretor-matriz" id="crMatriz"></table>
-        </div>
-      </article>
+      <div id="crRelatorioDisciplinas"></div>
     </div>
     </div>
   </main>
@@ -259,6 +247,6 @@
   <script src="habilidades.js?v=descritores1"></script>
   <script src="dados_rede.js?v=rede1"></script>
   <script src="dados_nominal.js?v=nomes1"></script>
-  <script src="corretor.js?v=eixo6"></script>
+  <script src="corretor.js?v=eixo7"></script>
 </body>
 </html>

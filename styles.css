@@ -437,6 +437,9 @@ html:not([data-tema="dia"]) select option { color: #e8f2f6; background-color: #1
 }
 .corretor-voz { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
 .corretor-result-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.corretor-relatorio-disc { margin: 8px 0 28px; }
+.corretor-relatorio-disc > h2 { margin: 0 0 4px; }
+.corretor-relatorio-vazio { margin: 8px 0 0; }
 .corretor-matriz td.ok { color: #7bd389; }
 .corretor-matriz td.erro { color: #ff8b8b; background: rgba(229, 57, 53, .12); }
 .corretor-matriz td.alta { color: #7bd389; font-weight: 700; }

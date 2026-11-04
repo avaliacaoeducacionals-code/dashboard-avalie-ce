@@ -14,8 +14,7 @@
   let pack = null;
   let anoAtual = "1º";
   let editIndex = -1;
-  let chartQ = null;
-  let chartP = null;
+  let chartsRelatorio = [];
   let recognition = null;
   let ouvindo = false;
   let iniciado = false;
@@ -1188,7 +1187,7 @@
     pintarAlunos();
     const aviso = $("crSemGabarito");
     if (aviso) aviso.hidden = a.questions.length > 0;
-    if (a.questions.length && a.students.length) gerarResultados(false);
+    if (temRelatorioDaTurma()) gerarResultados(false);
     else $("crResultados").hidden = true;
     pintarFinalizacao();
     marcarTela(true);
@@ -1708,49 +1707,200 @@
     if ($("crAbrirStatus")) $("crAbrirStatus").textContent = "Alteração salva.";
   }
 
-  function gerarResultados(rolar) {
-    gravarFormulario();
-    salvar();
+  function disciplinasDoRelatorio() {
+    const lista = pack.disciplinas || [];
+    const port = lista.find((d) => fold(d.nome) === "PORTUGUES") || { id: "d-portugues", nome: "Português" };
+    const mat = lista.find((d) => fold(d.nome) === "MATEMATICA") || { id: "d-matematica", nome: "Matemática" };
+    return [port, mat];
+  }
+
+  function provaDisciplina(disciplinaId) {
+    const provas = garantirProvas(atual());
+    const prova = provas[disciplinaId];
+    const questions = prova && Array.isArray(prova.questions) ? prova.questions : [];
+    return questions;
+  }
+
+  function alunoContaNaDisciplina(student, disciplinaId) {
+    if (!student) return false;
+    if (student.disciplinaId) return student.disciplinaId === disciplinaId;
+    const legado = atual().gabaritoLegadoEm || idPortuguesDe(pack.disciplinas);
+    return disciplinaId === legado;
+  }
+
+  function alunosDisciplinaRelatorio(disciplinaId) {
     const a = atual();
-    const doContexto = alunosDoContexto(a.students);
-    if (!a.questions.length || !doContexto.length) {
-      if (rolar) alert("Salve o gabarito e lance ao menos um aluno.");
-      $("crResultados").hidden = true;
-      return;
-    }
-    const presentesLista = alunosComNota(doContexto);
+    if (!a.escolaId || !a.turmaId) return [];
+    const roster = alunosDoLancamento();
+    const ids = new Set(roster.map((aluno) => aluno.id));
+    const nomes = new Set(roster.map((aluno) => aluno.nome));
+    return (a.students || []).filter((s) => {
+      const daTurma = (s.alunoId && ids.has(s.alunoId)) || nomes.has(s.name);
+      return daTurma && alunoContaNaDisciplina(s, disciplinaId);
+    });
+  }
+
+  function temRelatorioDaTurma() {
+    const a = atual();
+    if (!a.escolaId || !a.turmaId) return false;
+    return disciplinasDoRelatorio().some((d) => provaDisciplina(d.id).length && alunosDisciplinaRelatorio(d.id).length);
+  }
+
+  function notaComQuestoes(student, qs) {
+    if (!qs.length) return 0;
+    let certos = 0;
+    qs.forEach((q, i) => { if ((student.answers || [])[i] === q.correct) certos += 1; });
+    return (100 * certos) / qs.length;
+  }
+
+  function mapaDescritoresDe(disciplinaId) {
+    const hab = window.HAB_NOMES;
+    if (!hab) return null;
+    const mapa = hab[anoAtual + "|" + nomeDisciplina(disciplinaId)];
+    if (!mapa || typeof mapa !== "object") return null;
+    return mapa;
+  }
+
+  function textoDescritorDe(q, mapa) {
+    if (q && q.descriptor && mapa && mapa[q.descriptor]) return mapa[q.descriptor];
+    return (q && q.descriptorText) || "";
+  }
+
+  function textoResultadoAluno(student, qs) {
+    if (!student) return "Sem lançamento";
+    const sit = situacaoAluno(student);
+    if (sit) return sit;
+    if (!qs.length) return "Sem gabarito";
+    const nota = notaComQuestoes(student, qs);
+    return `${nota.toFixed(1)}% · ${nivelDe(nota)}`;
+  }
+
+  function idSeguro(id) {
+    return String(id || "disc").replace(/[^A-Za-z0-9_-]/g, "");
+  }
+
+  function destruirGraficosRelatorio() {
+    chartsRelatorio.forEach((grafico) => {
+      try { grafico.destroy(); } catch (e) { /* gráfico já destruído */ }
+    });
+    chartsRelatorio = [];
+  }
+
+  function resumoDisciplina(disciplina) {
+    const qs = provaDisciplina(disciplina.id);
+    const alunos = alunosDisciplinaRelatorio(disciplina.id);
+    const presentesLista = alunosComNota(alunos);
     const presentes = presentesLista.length;
-    const aptos = Number(a.matriculados) || 0;
+    const aptos = Number(atual().matriculados) || 0;
     const ausencia = aptos > 0 ? ((aptos - presentes) / aptos) * 100 : 0;
-    const notas = presentesLista.map(notaAluno);
+    const notas = presentesLista.map((s) => notaComQuestoes(s, qs));
     const media = notas.length ? notas.reduce((s, n) => s + n, 0) / notas.length : null;
     const ordenadas = [...notas].sort((x, y) => x - y);
     const meio = Math.floor(ordenadas.length / 2);
     const mediana = notas.length ? (ordenadas.length % 2 ? ordenadas[meio] : (ordenadas[meio - 1] + ordenadas[meio]) / 2) : null;
     const variancia = notas.length ? notas.reduce((s, n) => s + (n - media) ** 2, 0) / notas.length : null;
     const desvio = variancia == null ? null : Math.sqrt(variancia);
-    const info = identificacao();
+    return { qs, alunos, presentesLista, presentes, ausencia, notas, media, mediana, desvio };
+  }
+
+  function htmlBlocoDisciplina(disciplina) {
+    const qs = provaDisciplina(disciplina.id);
+    const alunos = alunosDisciplinaRelatorio(disciplina.id);
+    const titulo = `<h2>${esc(disciplina.nome)}</h2>`;
+    if (!qs.length || !alunos.length) {
+      let aviso = "Ainda não há lançamento desta disciplina.";
+      if (!qs.length && alunos.length) aviso = "Ainda não há gabarito desta disciplina.";
+      else if (qs.length) aviso = `${qs.length} questões. Ainda não há lançamento desta disciplina.`;
+      return `<section class="corretor-relatorio-disc">${titulo}<p class="hint corretor-relatorio-vazio">${esc(aviso)}</p></section>`;
+    }
+    const r = resumoDisciplina(disciplina);
     const fmtPct = (n) => (n == null ? "—" : `${n.toFixed(1)}%`);
-    $("crTituloResultado").textContent = `Resultado — ${anoAtual} ano — ${info.escola} — ${info.turma} — ${info.disciplina}`;
-    $("crMetaResultado").textContent = `${info.escola} · ${info.turma} · ${info.disciplina} · ${a.nome || "Avaliação sem nome"}${a.data ? " · " + a.data : ""}`;
-    $("crKpis").innerHTML = `
-      <div class="kpi"><span>Presentes</span><strong>${presentes}</strong></div>
-      <div class="kpi"><span>Ausência</span><strong>${ausencia.toFixed(1)}%</strong></div>
-      <div class="kpi"><span>Média</span><strong>${fmtPct(media)}</strong></div>
-      <div class="kpi"><span>Nível</span><strong>${media == null ? "—" : esc(nivelDe(media))}</strong></div>
-      <div class="kpi"><span>Mediana</span><strong>${fmtPct(mediana)}</strong></div>
-      <div class="kpi"><span>Desvio</span><strong>${desvio == null ? "—" : desvio.toFixed(2)}</strong></div>
+    const sid = idSeguro(disciplina.id);
+    return `
+      <section class="corretor-relatorio-disc" data-disc="${esc(disciplina.id)}">
+        ${titulo}
+        <p class="hint">${qs.length} questões</p>
+        <div class="kpis">
+          <div class="kpi"><span>Questões</span><strong>${qs.length}</strong></div>
+          <div class="kpi"><span>Presentes</span><strong>${r.presentes}</strong></div>
+          <div class="kpi"><span>Ausência</span><strong>${r.ausencia.toFixed(1)}%</strong></div>
+          <div class="kpi"><span>Média</span><strong>${fmtPct(r.media)}</strong></div>
+          <div class="kpi"><span>Nível</span><strong>${r.media == null ? "—" : esc(nivelDe(r.media))}</strong></div>
+          <div class="kpi"><span>Mediana</span><strong>${fmtPct(r.mediana)}</strong></div>
+          <div class="kpi"><span>Desvio</span><strong>${r.desvio == null ? "—" : r.desvio.toFixed(2)}</strong></div>
+        </div>
+        <div class="grid-2">
+          <article class="card"><canvas id="crChartQ_${sid}"></canvas></article>
+          <article class="card"><canvas id="crChartP_${sid}"></canvas></article>
+        </div>
+        <article class="card">
+          <h2>Matriz de desempenho</h2>
+          <div class="table-wrap"><table class="corretor-matriz">${htmlMatriz(qs, alunos, mapaDescritoresDe(disciplina.id))}</table></div>
+        </article>
+      </section>
     `;
+  }
+
+  function htmlResultadoPorAluno(disciplinas) {
+    const porDisc = disciplinas.map((d) => ({
+      d,
+      qs: provaDisciplina(d.id),
+      alunos: alunosDisciplinaRelatorio(d.id),
+    }));
+    const unicos = new Map();
+    porDisc.forEach(({ alunos }) => {
+      alunos.forEach((s) => {
+        const chave = s.alunoId ? "id:" + s.alunoId : "nome:" + fold(s.name || "");
+        if (!unicos.has(chave)) unicos.set(chave, s.name || "");
+      });
+    });
+    const linhas = [...unicos.entries()].sort((a, b) => a[1].localeCompare(b[1], "pt-BR"));
+    const head = `<thead><tr><th>Aluno</th>${disciplinas.map((d) => `<th>${esc(d.nome)}</th>`).join("")}</tr></thead>`;
+    if (!linhas.length) {
+      return `
+        <article class="card" id="crRelatorioAlunos">
+          <h2>Resultado por aluno</h2>
+          <p class="hint">Nenhum aluno lançado nesta turma.</p>
+        </article>
+      `;
+    }
+    const body = linhas.map(([chave, nome]) => {
+      const cols = porDisc.map(({ qs, alunos }) => {
+        const student = alunos.find((s) => (s.alunoId ? "id:" + s.alunoId : "nome:" + fold(s.name || "")) === chave);
+        return `<td>${esc(textoResultadoAluno(student, qs))}</td>`;
+      }).join("");
+      return `<tr><td>${esc(nome)}</td>${cols}</tr>`;
+    }).join("");
+    return `
+      <article class="card" id="crRelatorioAlunos">
+        <h2>Resultado por aluno</h2>
+        <div class="table-wrap"><table class="corretor-matriz">${head}<tbody>${body}</tbody></table></div>
+      </article>
+    `;
+  }
+
+  function gerarResultados(rolar) {
+    gravarFormulario();
+    salvar();
+    const a = atual();
+    if (!a.escolaId || !a.turmaId) {
+      if (rolar) alert("Escolha a escola e a turma antes de gerar o relatório.");
+      $("crResultados").hidden = true;
+      return;
+    }
+    const disciplinas = disciplinasDoRelatorio();
+    const info = identificacao();
+    $("crTituloResultado").textContent = `Resultado — ${anoAtual} ano — ${info.escola} — ${info.turma} — Português e Matemática`;
+    $("crMetaResultado").textContent = `${info.escola} · ${info.turma} · Português e Matemática · ${a.nome || "Avaliação sem nome"}${a.data ? " · " + a.data : ""}`;
+    destruirGraficosRelatorio();
+    $("crRelatorioDisciplinas").innerHTML = disciplinas.map(htmlBlocoDisciplina).join("") + htmlResultadoPorAluno(disciplinas);
     $("crResultados").hidden = false;
-    pintarMatriz();
-    pintarGraficos();
+    pintarGraficosRelatorio(disciplinas);
     if (rolar) $("crResultados").scrollIntoView({ behavior: "smooth" });
   }
 
-  function pintarMatriz() {
-    const a = atual();
-    const qs = a.questions;
-    const alunos = alunosDoContexto(a.students).sort((x, y) => x.name.localeCompare(y.name, "pt-BR"));
+  function htmlMatriz(qs, alunosOrigem, mapa) {
+    const alunos = [...alunosOrigem].sort((x, y) => x.name.localeCompare(y.name, "pt-BR"));
     const acertosQ = new Array(qs.length).fill(0);
     const marcas = ["1", "2", "3", "4"];
     if (qs.some((q) => q.type === "5")) marcas.push("5");
@@ -1763,7 +1913,7 @@
     head += "<th>Acertos</th><th>%</th><th>Nível</th></tr><tr><th>Descritor</th>";
     qs.forEach((q) => {
       const cod = q.descriptor ? esc(q.descriptor) : "—";
-      const texto = textoDescritor(q);
+      const texto = textoDescritorDe(q, mapa);
       head += `<th title="${esc(texto)}">${cod}${texto ? `<span class="cr-th-desc">${esc(texto)}</span>` : ""}</th>`;
     });
     head += "<th></th><th></th><th></th></tr></thead>";
@@ -1824,68 +1974,71 @@
       foot += "<td></td><td></td><td></td></tr>";
     });
     foot += "</tfoot>";
-    $("crMatriz").innerHTML = head + body + foot;
+    return head + body + foot;
   }
 
-  function pintarGraficos() {
+  function pintarGraficosRelatorio(disciplinas) {
     if (!window.Chart) return;
-    const a = atual();
-    const qs = a.questions;
-    const avaliados = alunosComNota(alunosDoContexto(a.students));
-    const acertos = qs.map((q, i) => avaliados.filter((s) => (s.answers || [])[i] === q.correct).length);
-    const perc = acertos.map((n) => (avaliados.length ? (100 * n) / avaliados.length : null));
     const plugin = window.ChartDataLabels ? [ChartDataLabels] : [];
-    if (chartQ) chartQ.destroy();
-    chartQ = new Chart($("crChartQ"), {
-      type: "bar",
-      plugins: plugin,
-      data: {
-        labels: qs.map((q, i) => "Q" + (i + 1) + (q.descriptor ? " " + q.descriptor : "")),
-        datasets: [{ label: "% de acerto", data: perc, backgroundColor: "#2ec4b6", borderRadius: 4 }],
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          title: { display: true, text: "Acertos por questão" },
-          legend: { display: false },
-          datalabels: { color: "#062027", font: { weight: "bold" }, formatter: (v) => (v == null ? "" : Math.round(v) + "%") },
+    disciplinas.forEach((disciplina) => {
+      const qs = provaDisciplina(disciplina.id);
+      const avaliados = alunosComNota(alunosDisciplinaRelatorio(disciplina.id));
+      if (!qs.length || !avaliados.length) return;
+      const sid = idSeguro(disciplina.id);
+      const canvasQ = $("crChartQ_" + sid);
+      const canvasP = $("crChartP_" + sid);
+      if (!canvasQ || !canvasP) return;
+      const acertos = qs.map((q, i) => avaliados.filter((s) => (s.answers || [])[i] === q.correct).length);
+      const perc = acertos.map((n) => (avaliados.length ? (100 * n) / avaliados.length : null));
+      chartsRelatorio.push(new Chart(canvasQ, {
+        type: "bar",
+        plugins: plugin,
+        data: {
+          labels: qs.map((q, i) => "Q" + (i + 1) + (q.descriptor ? " " + q.descriptor : "")),
+          datasets: [{ label: "% de acerto", data: perc, backgroundColor: "#2ec4b6", borderRadius: 4 }],
         },
-        scales: { y: { beginAtZero: true, max: 100 } },
-      },
-    });
-
-    const faixas = {};
-    (a.escalas || []).forEach((s) => { if (s.nome) faixas[s.nome] = 0; });
-    avaliados.forEach((s) => {
-      const nivel = nivelDe(notaAluno(s));
-      if (faixas[nivel] == null) faixas[nivel] = 0;
-      faixas[nivel] += 1;
-    });
-    if (chartP) chartP.destroy();
-    chartP = new Chart($("crChartP"), {
-      type: "doughnut",
-      plugins: plugin,
-      data: {
-        labels: Object.keys(faixas),
-        datasets: [{
-          data: Object.values(faixas),
-          backgroundColor: ["#e53935", "#ffbf69", "#7bd389", "#5eb8d6", "#c4a574"],
-        }],
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          title: { display: true, text: "Alunos por nível" },
-          datalabels: {
-            color: "#062027",
-            font: { weight: "bold" },
-            formatter: (v, ctx) => {
-              const total = ctx.dataset.data.reduce((s, n) => s + n, 0);
-              return v > 0 && total ? Math.round((100 * v) / total) + "%" : "";
+        options: {
+          responsive: true,
+          plugins: {
+            title: { display: true, text: "Acertos por questão" },
+            legend: { display: false },
+            datalabels: { color: "#062027", font: { weight: "bold" }, formatter: (v) => (v == null ? "" : Math.round(v) + "%") },
+          },
+          scales: { y: { beginAtZero: true, max: 100 } },
+        },
+      }));
+      const faixas = {};
+      (atual().escalas || []).forEach((s) => { if (s.nome) faixas[s.nome] = 0; });
+      avaliados.forEach((s) => {
+        const nivel = nivelDe(notaComQuestoes(s, qs));
+        if (faixas[nivel] == null) faixas[nivel] = 0;
+        faixas[nivel] += 1;
+      });
+      chartsRelatorio.push(new Chart(canvasP, {
+        type: "doughnut",
+        plugins: plugin,
+        data: {
+          labels: Object.keys(faixas),
+          datasets: [{
+            data: Object.values(faixas),
+            backgroundColor: ["#e53935", "#ffbf69", "#7bd389", "#5eb8d6", "#c4a574"],
+          }],
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            title: { display: true, text: "Alunos por nível" },
+            datalabels: {
+              color: "#062027",
+              font: { weight: "bold" },
+              formatter: (v, ctx) => {
+                const total = ctx.dataset.data.reduce((s, n) => s + n, 0);
+                return v > 0 && total ? Math.round((100 * v) / total) + "%" : "";
+              },
             },
           },
         },
-      },
+      }));
     });
   }
 
@@ -1900,8 +2053,11 @@
     btn.textContent = "Gerando PDF...";
     try {
       window.scrollTo(0, 0);
-      const topo = await html2canvas($("crDashboardTop"), { scale: 2, backgroundColor: "#ffffff", useCORS: true });
-      const tabela = await html2canvas($("crMatrizBox"), { scale: 2, backgroundColor: "#ffffff", useCORS: true });
+      const blocos = [...document.querySelectorAll("#crRelatorioDisciplinas > section, #crRelatorioAlunos")];
+      const imagens = [];
+      for (const bloco of blocos) {
+        imagens.push(await html2canvas(bloco, { scale: 2, backgroundColor: "#ffffff", useCORS: true }));
+      }
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF("l", "pt", "a4");
       const largura = pdf.internal.pageSize.getWidth();
@@ -1909,20 +2065,25 @@
       const a = atual();
       const info = identificacao();
       pdf.setFontSize(16);
-      const tituloPdf = pdf.splitTextToSize(`Corretor — ${anoAtual} ano — ${info.escola} — ${info.turma} — ${info.disciplina}`, largura - 48);
+      const tituloPdf = pdf.splitTextToSize(`Corretor — ${anoAtual} ano — ${info.escola} — ${info.turma} — Português e Matemática`, largura - 48);
       pdf.text(tituloPdf, 24, 28);
       pdf.setFontSize(11);
-      const subPdf = pdf.splitTextToSize(`${info.escola}  ·  ${info.turma}  ·  ${info.disciplina}  ·  ${a.nome || "Avaliação sem nome"}`, largura - 48);
+      const subPdf = pdf.splitTextToSize(`${info.escola}  ·  ${info.turma}  ·  Português e Matemática  ·  ${a.nome || "Avaliação sem nome"}`, largura - 48);
       const ySub = 28 + tituloPdf.length * 18;
       pdf.text(subPdf, 24, ySub);
-      const yImg = ySub + subPdf.length * 14 + 12;
-      const h1 = ((largura - 48) * topo.height) / topo.width;
-      pdf.addImage(topo.toDataURL("image/png"), "PNG", 24, yImg, largura - 48, h1);
-      const h2 = ((largura - 48) * tabela.height) / tabela.width;
-      const altPagina = Math.max(altura, h2 + 36);
-      pdf.addPage([largura, altPagina], "l");
-      pdf.addImage(tabela.toDataURL("image/png"), "PNG", 24, 18, largura - 48, h2);
-      const arquivo = `Corretor_${anoAtual.replace("º", "ano")}_${info.escola}_${info.turma}_${info.disciplina}`.replace(/[^\w\-]+/g, "_");
+      let yLivre = ySub + subPdf.length * 14 + 12;
+      imagens.forEach((img) => {
+        const h = ((largura - 48) * img.height) / img.width;
+        const cabe = yLivre + h <= altura - 18;
+        if (!cabe) {
+          const altPagina = Math.max(altura, h + 36);
+          pdf.addPage([largura, altPagina], "l");
+          yLivre = 18;
+        }
+        pdf.addImage(img.toDataURL("image/png"), "PNG", 24, yLivre, largura - 48, h);
+        yLivre += h + 16;
+      });
+      const arquivo = `Corretor_${anoAtual.replace("º", "ano")}_${info.escola}_${info.turma}_Portugues_e_Matematica`.replace(/[^\w\-]+/g, "_");
       pdf.save(arquivo + ".pdf");
     } catch (e) {
       alert("Não foi possível gerar o PDF neste navegador.");
@@ -2214,7 +2375,7 @@
     else mostrarBanco();
   }
 
-  window.CORRETOR_VER = "eixo6";
+  window.CORRETOR_VER = "eixo7";
   window.corretorIrPara = function corretorIrPara(realizar) {
     iniciar();
     if (realizar) mostrarAplicacao();
