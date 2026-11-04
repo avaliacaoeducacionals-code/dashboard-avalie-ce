@@ -10,7 +10,7 @@
   <script>
     document.documentElement.dataset.tema = localStorage.getItem("avalie-tema") === "dia" ? "dia" : "noite";
   </script>
-  <link rel="stylesheet" href="styles.css?v=eixo19" />
+  <link rel="stylesheet" href="styles.css?v=eixo20" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
 <body class="capa-ativa">
@@ -36,7 +36,7 @@
         <div class="capa-cinco">
           <button type="button" class="capa-card" data-capa-grupo="capaGrupoEixo">
             <strong>Eixo de avaliação</strong>
-            <span>Avaliações da rede, acompanhamento e o banco da avaliação.</span>
+            <span>Avaliações da rede, acompanhamento, resultados e o banco.</span>
             <span class="capa-btn">Abrir</span>
           </button>
           <a class="capa-card" id="abrirRealizarCapa" href="corretor.html?realizar=1&amp;v=eixo9" target="avalieCorretor">
@@ -46,7 +46,7 @@
           </a>
           <button type="button" class="capa-card" data-capa-grupo="capaGrupoRes">
             <strong>Resultados</strong>
-            <span>Ranqueado, ranking geral, linhas e cartas.</span>
+            <span>Ainda sem itens nesta tela.</span>
             <span class="capa-btn">Abrir</span>
           </button>
         </div>
@@ -71,6 +71,26 @@
             <span>Abre o corretor, do 1º ao 9º ano.</span>
             <span class="capa-btn">Abrir</span>
           </a>
+          <button type="button" class="capa-card" data-capa-page="rank">
+            <strong>Resultado ranqueado</strong>
+            <span>Colocação por avaliação e ano.</span>
+            <span class="capa-btn">Abrir</span>
+          </button>
+          <button type="button" class="capa-card" data-capa-page="rankgeral">
+            <strong>Ranking geral</strong>
+            <span>Protocolo do 1º ao 9º em uma colocação.</span>
+            <span class="capa-btn">Abrir</span>
+          </button>
+          <button type="button" class="capa-card" data-capa-page="linhas">
+            <strong>Gráficos de linhas</strong>
+            <span>Sequência do emparelhamento em linhas.</span>
+            <span class="capa-btn">Abrir</span>
+          </button>
+          <button type="button" class="capa-card" data-capa-page="cartas">
+            <strong>Cartas PDF</strong>
+            <span>Cartas por avaliação para imprimir ou salvar.</span>
+            <span class="capa-btn">Abrir</span>
+          </button>
         </div>
       </div>
 
@@ -165,28 +185,7 @@
       <div class="capa-palco capa-grupo" id="capaGrupoRes" hidden>
         <button type="button" class="capa-voltar" data-capa-voltar="capaCinco">Voltar</button>
         <p class="capa-secretaria">Resultados</p>
-        <div class="capa-setores">
-          <button type="button" class="capa-card" data-capa-page="rank">
-            <strong>Resultado ranqueado</strong>
-            <span>Colocação por avaliação e ano.</span>
-            <span class="capa-btn">Abrir</span>
-          </button>
-          <button type="button" class="capa-card" data-capa-page="rankgeral">
-            <strong>Ranking geral</strong>
-            <span>Protocolo do 1º ao 9º em uma colocação.</span>
-            <span class="capa-btn">Abrir</span>
-          </button>
-          <button type="button" class="capa-card" data-capa-page="linhas">
-            <strong>Gráficos de linhas</strong>
-            <span>Sequência do emparelhamento em linhas.</span>
-            <span class="capa-btn">Abrir</span>
-          </button>
-          <button type="button" class="capa-card" data-capa-page="cartas">
-            <strong>Cartas PDF</strong>
-            <span>Cartas por avaliação para imprimir ou salvar.</span>
-            <span class="capa-btn">Abrir</span>
-          </button>
-        </div>
+        <p class="capa-vazio">Ainda não há itens nesta tela.</p>
       </div>
     </section>
   </div>
@@ -1325,6 +1324,6 @@
   <script src="dados_consulta_aval_2ano.js"></script>
   <script src="dados_consulta_aval_5ano.js"></script>
   <script src="habilidades.js"></script>
-  <script src="app.js?v=eixo19"></script>
+  <script src="app.js?v=eixo20"></script>
 </body>
 </html>

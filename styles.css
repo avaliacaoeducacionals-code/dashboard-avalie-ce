@@ -2045,6 +2045,15 @@ body:not(.capa-ativa) .capa { display: none; }
   text-transform: uppercase;
   text-align: center;
 }
+.capa-vazio {
+  margin: 22px auto 0;
+  max-width: 420px;
+  color: #fff;
+  font-size: 16px;
+  line-height: 1.45;
+  text-align: center;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+}
 .capa-marca-mun {
   display: flex;
   flex-direction: column;
