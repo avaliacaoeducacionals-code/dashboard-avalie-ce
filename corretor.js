@@ -21,6 +21,7 @@
   let iniciando = false;
   let provaEmTela = "";
   let gabaritoDomDaProva = "";
+  let acessoRealizar = null;
 
   function soltarRotulosGlobais() {
     try {
@@ -308,13 +309,18 @@
     const todas = pack.turmas || [];
     const numero = String(ano || "").replace(/\D/g, "");
     let lista = todas.filter((t) => String(t.nome).startsWith(numero));
+    const idsDaEscola = () => new Set(
+      (pack.alunos || [])
+        .filter((aluno) => aluno.ano === ano && aluno.escolaId === escolaId && aluno.turmaId)
+        .map((aluno) => aluno.turmaId)
+    );
+    if (escolaTravada() && escolaId) {
+      return todas.filter((t) => idsDaEscola().has(t.id))
+        .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR", { numeric: true }));
+    }
     const temRede = (pack.alunos || []).some((aluno) => aluno.rede);
     if (temRede && escolaId) {
-      const ids = new Set(
-        (pack.alunos || [])
-          .filter((aluno) => aluno.ano === ano && aluno.escolaId === escolaId && aluno.turmaId)
-          .map((aluno) => aluno.turmaId)
-      );
+      const ids = idsDaEscola();
       const daEscola = lista.filter((t) => ids.has(t.id));
       if (daEscola.length) lista = daEscola;
     }
@@ -330,6 +336,7 @@
     if (!a.escolaId || !a.turmaId) return [];
     return (pack.alunos || [])
       .filter((aluno) => aluno.ano === anoAtual && aluno.escolaId === a.escolaId && aluno.turmaId === a.turmaId)
+      .filter((aluno) => !escolaTravada() || aluno.escolaId === idEscolaTravada())
       .sort((x, y) => x.nome.localeCompare(y.nome, "pt-BR"));
   }
 
@@ -871,19 +878,26 @@
         menu.innerHTML = `<option value="">Nenhuma escola cadastrada</option>`;
         menu.value = "";
       } else {
-        menu.innerHTML = `<option value="">Selecione a escola</option>` + pack.escolas.map((e) => `
+        menu.innerHTML = `<option value="">Selecione a escola</option>` + escolasParaMenu().map((e) => `
           <option value="${esc(e.id)}">${esc(e.nome)}</option>
         `).join("");
-        menu.value = pack.escolas.some((e) => e.id === antes) ? antes : "";
+        menu.value = escolasParaMenu().some((e) => e.id === antes) ? antes : "";
       }
       atualizarBotaoExcluirEscola();
     }
     const sel = $("crEscola");
     const id = atual().escolaId;
-    sel.innerHTML = `<option value="">Selecione a escola</option>` + pack.escolas.map((e) => `
+    const escolas = escolasParaMenu();
+    sel.innerHTML = `<option value="">Selecione a escola</option>` + escolas.map((e) => `
       <option value="${esc(e.id)}">${esc(e.nome)}</option>
     `).join("");
-    sel.value = pack.escolas.some((e) => e.id === id) ? id : "";
+    sel.value = escolas.some((e) => e.id === id) ? id : "";
+    if (escolaTravada() && escolas[0]) {
+      sel.value = escolas[0].id;
+      sel.disabled = true;
+    } else {
+      sel.disabled = false;
+    }
     atual().escolaId = sel.value;
   }
 
@@ -1029,9 +1043,16 @@
   }
 
   function pintarAlunos() {
+    const daEscola = (s) => {
+      if (!escolaTravada()) return true;
+      const id = idEscolaTravada();
+      if (s.alunoId) return (pack.alunos || []).some((aluno) => aluno.id === s.alunoId && aluno.escolaId === id);
+      const nomes = new Set((pack.alunos || []).filter((aluno) => aluno.escolaId === id).map((aluno) => fold(aluno.nome)));
+      return nomes.has(fold(s.name));
+    };
     const alunos = (atual().students || [])
       .map((s, i) => ({ s, i }))
-      .filter(({ s }) => mesmaDisciplina(s));
+      .filter(({ s }) => mesmaDisciplina(s) && daEscola(s));
     $("crListaBox").hidden = alunos.length === 0 && editIndex < 0;
     $("crQtdAlunos").textContent = String(alunos.length);
     const tituloBloqueio = "Aluno já salvo. Altere em Eixo de avaliação, em Abrir o resultado.";
@@ -1153,7 +1174,18 @@
 
   function pintarLancamentoContexto() {
     const a = atual();
-    preencherSelect($("crLancEscola"), "Selecione a escola", pack.escolas, a.escolaId);
+    const escolas = escolasParaMenu();
+    preencherSelect($("crLancEscola"), "Selecione a escola", escolas, a.escolaId);
+    const escolaMenu = $("crLancEscola");
+    if (escolaMenu) {
+      if (escolaTravada() && escolas[0]) {
+        escolaMenu.value = escolas[0].id;
+        escolaMenu.disabled = true;
+        a.escolaId = escolas[0].id;
+      } else {
+        escolaMenu.disabled = false;
+      }
+    }
     const ano = $("crLancAno");
     if (ano) {
       ano.innerHTML = ANOS.map((item) => `<option value="${item}">${item} ano</option>`).join("");
@@ -1195,16 +1227,25 @@
     return !!(box && !box.hidden);
   }
 
+  function atualizarLegenda() {
+    const sub = $("pageSubtitle");
+    if (!sub) return;
+    if (!sub.dataset.padrao) sub.dataset.padrao = sub.textContent;
+    sub.textContent = escolaTravada() ? acessoRealizar.escola : sub.dataset.padrao;
+  }
+
   function mostrarBanco() {
     pararVoz();
     $("crAplicacao").hidden = true;
     $("crBanco").hidden = false;
     marcarTela(false);
+    atualizarLegenda();
     pintarAbrir();
   }
 
   function mostrarAplicacao(forcarRespostas) {
     const a = atual();
+    aplicarEscolaTravada();
     if (lancamentoFinalizado()) editIndex = -1;
     $("crBanco").hidden = true;
     $("crAplicacao").hidden = false;
@@ -1221,6 +1262,9 @@
     else $("crResultados").hidden = true;
     pintarFinalizacao();
     marcarTela(true);
+    const voltar = $("crVoltarBanco");
+    if (voltar) voltar.hidden = escolaTravada();
+    atualizarLegenda();
     $("crAluno").focus();
   }
 
@@ -1678,7 +1722,7 @@
   function pintarAbrir() {
     if (!$("crAbrirEscola")) return;
     const a = atual();
-    preencherSelect($("crAbrirEscola"), "Selecione a escola", pack.escolas, a.escolaId);
+    preencherSelect($("crAbrirEscola"), "Selecione a escola", escolasParaMenu(), a.escolaId);
     const ano = $("crAbrirAno");
     if (ano) {
       ano.innerHTML = ANOS.map((item) => `<option value="${item}">${item} ano</option>`).join("");
@@ -2249,6 +2293,183 @@
     $("crVozPausar").textContent = "Pausar";
   }
 
+  function rotrHash(x, n) {
+    return ((x >>> n) | (x << (32 - n))) >>> 0;
+  }
+
+  function sha256Hex(mensagem) {
+    const K = new Uint32Array([
+      0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+      0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+      0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+      0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+      0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+      0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+      0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+      0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+    ]);
+    const bytes = new TextEncoder().encode(mensagem);
+    const bitLen = bytes.length * 8;
+    const comUm = bytes.length + 1;
+    const zeros = (56 - (comUm % 64) + 64) % 64;
+    const total = bytes.length + 1 + zeros + 8;
+    const buf = new Uint8Array(total);
+    buf.set(bytes);
+    buf[bytes.length] = 0x80;
+    const view = new DataView(buf.buffer);
+    view.setUint32(total - 8, Math.floor(bitLen / 0x100000000));
+    view.setUint32(total - 4, bitLen >>> 0);
+    let h0 = 0x6a09e667, h1 = 0xbb67ae85, h2 = 0x3c6ef372, h3 = 0xa54ff53a;
+    let h4 = 0x510e527f, h5 = 0x9b05688c, h6 = 0x1f83d9ab, h7 = 0x5be0cd19;
+    const w = new Uint32Array(64);
+    for (let i = 0; i < buf.length; i += 64) {
+      for (let t = 0; t < 16; t++) w[t] = view.getUint32(i + t * 4);
+      for (let t = 16; t < 64; t++) {
+        const s0 = rotrHash(w[t - 15], 7) ^ rotrHash(w[t - 15], 18) ^ (w[t - 15] >>> 3);
+        const s1 = rotrHash(w[t - 2], 17) ^ rotrHash(w[t - 2], 19) ^ (w[t - 2] >>> 10);
+        w[t] = (w[t - 16] + s0 + w[t - 7] + s1) >>> 0;
+      }
+      let a = h0, b = h1, c = h2, d = h3, e = h4, f = h5, g = h6, h = h7;
+      for (let t = 0; t < 64; t++) {
+        const s1 = rotrHash(e, 6) ^ rotrHash(e, 11) ^ rotrHash(e, 25);
+        const ch = (e & f) ^ (~e & g);
+        const temp1 = (h + s1 + ch + K[t] + w[t]) >>> 0;
+        const s0 = rotrHash(a, 2) ^ rotrHash(a, 13) ^ rotrHash(a, 22);
+        const maj = (a & b) ^ (a & c) ^ (b & c);
+        const temp2 = (s0 + maj) >>> 0;
+        h = g; g = f; f = e; e = (d + temp1) >>> 0; d = c; c = b; b = a; a = (temp1 + temp2) >>> 0;
+      }
+      h0 = (h0 + a) >>> 0; h1 = (h1 + b) >>> 0; h2 = (h2 + c) >>> 0; h3 = (h3 + d) >>> 0;
+      h4 = (h4 + e) >>> 0; h5 = (h5 + f) >>> 0; h6 = (h6 + g) >>> 0; h7 = (h7 + h) >>> 0;
+    }
+    return [h0, h1, h2, h3, h4, h5, h6, h7].map((n) => n.toString(16).padStart(8, "0")).join("");
+  }
+
+  async function hashSenha(senha) {
+    if (window.crypto && crypto.subtle && window.isSecureContext) {
+      const dados = new TextEncoder().encode(senha);
+      const buf = await crypto.subtle.digest("SHA-256", dados);
+      return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+    }
+    return sha256Hex(senha);
+  }
+
+  function catalogoAcesso() {
+    return Array.isArray(window.ACESSO_ESCOLAS) ? window.ACESSO_ESCOLAS : [];
+  }
+
+  function buscarLogin(login) {
+    const chave = String(login || "").trim().toLowerCase();
+    if (!chave) return null;
+    return catalogoAcesso().find((item) => String(item.login || "").toLowerCase() === chave) || null;
+  }
+
+  function lerSessaoRealizar() {
+    try {
+      const bruto = JSON.parse(sessionStorage.getItem("avalie-realizar") || "null");
+      const item = buscarLogin(bruto && bruto.login);
+      if (!item) return null;
+      if (item.mestre) return { login: item.login, mestre: true };
+      return { login: item.login, escola: item.escola || "" };
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function escolaTravada() {
+    return !!(querRealizar() && acessoRealizar && !acessoRealizar.mestre && acessoRealizar.escola);
+  }
+
+  function escolasParaMenu() {
+    if (!escolaTravada()) return pack.escolas || [];
+    const alvo = fold(acessoRealizar.escola);
+    return (pack.escolas || []).filter((e) => fold(e.nome) === alvo);
+  }
+
+  function idEscolaTravada() {
+    const lista = escolasParaMenu();
+    return lista[0] ? lista[0].id : "";
+  }
+
+  function aplicarEscolaTravada() {
+    if (!escolaTravada()) return;
+    const id = idEscolaTravada();
+    if (!id) return;
+    const a = atual();
+    if (a.escolaId !== id) a.escolaId = id;
+  }
+
+  function mostrarTelaLogin() {
+    acessoRealizar = null;
+    document.documentElement.classList.add("realizar-login");
+    document.documentElement.classList.remove("realizar-ok");
+    const erro = $("realizarErro");
+    if (erro) erro.textContent = "";
+    const campo = $("realizarLoginCampo");
+    if (campo) campo.focus();
+  }
+
+  function entrarNoLancamento() {
+    acessoRealizar = lerSessaoRealizar();
+    if (!acessoRealizar) {
+      mostrarTelaLogin();
+      return;
+    }
+    document.documentElement.classList.add("realizar-login", "realizar-ok");
+    aplicarEscolaTravada();
+    pintar();
+    mostrarAplicacao();
+  }
+
+  async function entrarRealizar(ev) {
+    ev.preventDefault();
+    const loginEl = $("realizarLoginCampo");
+    const senhaEl = $("realizarSenhaCampo");
+    const erro = $("realizarErro");
+    const botao = ev.currentTarget.querySelector("button[type='submit']");
+    const login = loginEl ? loginEl.value.trim() : "";
+    const senha = senhaEl ? senhaEl.value.trim() : "";
+    if (erro) erro.textContent = "";
+    if (!login || !senha) {
+      if (erro) erro.textContent = "Informe o login e a senha.";
+      return;
+    }
+    if (botao) botao.disabled = true;
+    try {
+      const item = buscarLogin(login);
+      const hash = await hashSenha(senha);
+      const esperado = item && item.senhaHash ? String(item.senhaHash).toLowerCase() : "";
+      if (!item || hash !== esperado) {
+        if (erro) erro.textContent = "Login ou senha incorretos.";
+        return;
+      }
+      const sessao = item.mestre
+        ? { login: item.login, mestre: true }
+        : { login: item.login, escola: item.escola };
+      sessionStorage.setItem("avalie-realizar", JSON.stringify(sessao));
+      if (senhaEl) senhaEl.value = "";
+      acessoRealizar = sessao;
+      if (!iniciado) iniciar();
+      else entrarNoLancamento();
+    } finally {
+      if (botao) botao.disabled = false;
+    }
+  }
+
+  function sairRealizar() {
+    try { sessionStorage.removeItem("avalie-realizar"); } catch (e) { /* volta ao login */ }
+    const senhaEl = $("realizarSenhaCampo");
+    const loginEl = $("realizarLoginCampo");
+    if (senhaEl) senhaEl.value = "";
+    if (loginEl) loginEl.value = "";
+    try {
+      const u = new URL(location.href);
+      u.searchParams.set("realizar", "1");
+      history.replaceState(null, "", u.pathname + u.search + u.hash);
+    } catch (e) { /* permanece nesta janela */ }
+    mostrarTelaLogin();
+  }
+
   function iniciar() {
     if (iniciado) return;
     if (!Array.isArray(window.CORRETOR_NOMINAL)) {
@@ -2372,7 +2593,10 @@
       }
     });
     $("crSalvarGabarito").addEventListener("click", salvarGabarito);
-    $("crVoltarBanco").addEventListener("click", mostrarBanco);
+    $("crVoltarBanco").addEventListener("click", () => {
+      if (escolaTravada()) return;
+      mostrarBanco();
+    });
     $("crSalvarAluno").addEventListener("click", salvarAluno);
     $("crFinalizar").addEventListener("click", finalizarLancamento);
     $("crLancEscola").addEventListener("change", () => {
@@ -2448,20 +2672,48 @@
     $("crVozPausar").addEventListener("click", pausarVoz);
     $("crVozParar").addEventListener("click", pararVoz);
     pintar();
-    if (querRealizar()) mostrarAplicacao();
-    else mostrarBanco();
+    if (querRealizar()) {
+      acessoRealizar = lerSessaoRealizar();
+      if (!acessoRealizar) mostrarTelaLogin();
+      else entrarNoLancamento();
+    } else {
+      document.documentElement.classList.remove("realizar-login", "realizar-ok");
+      mostrarBanco();
+    }
   }
 
-  window.CORRETOR_VER = "eixo22";
+  window.CORRETOR_VER = "eixo23";
   window.corretorIrPara = function corretorIrPara(realizar) {
+    if (realizar) {
+      try {
+        const u = new URL(location.href);
+        u.searchParams.set("realizar", "1");
+        history.replaceState(null, "", u.pathname + u.search + u.hash);
+      } catch (e) { /* o endereço acompanha a tela quando o navegador permite */ }
+    } else {
+      marcarTela(false);
+    }
     iniciar();
-    if (realizar) mostrarAplicacao();
-    else mostrarBanco();
+    if (!iniciado) return;
+    if (realizar) {
+      acessoRealizar = lerSessaoRealizar();
+      if (!acessoRealizar) mostrarTelaLogin();
+      else entrarNoLancamento();
+      return;
+    }
+    acessoRealizar = null;
+    document.documentElement.classList.remove("realizar-login", "realizar-ok");
+    mostrarBanco();
   };
 
   window.corretorAoAbrir = function corretorAoAbrir() {
     iniciar();
   };
+
+  const formRealizar = document.getElementById("realizarForm");
+  if (formRealizar) formRealizar.addEventListener("submit", entrarRealizar);
+  const btnSairRealizar = document.getElementById("realizarSair");
+  if (btnSairRealizar) btnSairRealizar.addEventListener("click", sairRealizar);
 
   if (document.getElementById("crAddEscola")) {
     const subir = document.body.classList.contains("corretor-solo") ? window.corretorAoAbrir : iniciar;
