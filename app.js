@@ -5173,24 +5173,23 @@ function aplicarFotoCapa(idx) {
   if (fundo) fundo.src = foto.src;
 }
 
-function mostrarCinco() {
-  document.querySelectorAll(".capa-grupo").forEach((el) => {
-    el.hidden = true;
-  });
+function mostrarPalcoCapa(id) {
   const cinco = $("capaCinco");
-  if (cinco) cinco.hidden = false;
-  window.scrollTo(0, 0);
-}
-
-function abrirGrupoCapa(id) {
-  const cinco = $("capaCinco");
-  if (cinco) cinco.hidden = true;
+  if (cinco) cinco.hidden = id !== "capaCinco";
   document.querySelectorAll(".capa-grupo").forEach((el) => {
     el.hidden = el.id !== id;
   });
   window.scrollTo(0, 0);
-  const titulo = document.querySelector("#" + id + " .capa-secretaria");
+  const titulo = document.querySelector("#" + id + " .capa-secretaria, #" + id + " .capa-titulo");
   if (titulo) titulo.focus();
+}
+
+function mostrarCinco() {
+  mostrarPalcoCapa("capaCinco");
+}
+
+function abrirGrupoCapa(id) {
+  mostrarPalcoCapa(id);
 }
 
 function mostrarCapa() {
@@ -6187,7 +6186,11 @@ if (!DATA) {
     btn.addEventListener("click", () => abrirGrupoCapa(btn.dataset.capaGrupo));
   });
   document.querySelectorAll("[data-capa-voltar]").forEach((btn) => {
-    btn.addEventListener("click", mostrarCinco);
+    btn.addEventListener("click", () => {
+      const destino = btn.dataset.capaVoltar || "capaCinco";
+      if (destino === "capaCinco") mostrarCinco();
+      else abrirGrupoCapa(destino);
+    });
   });
   aplicarFotoCapa(0);
   if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {

@@ -10,7 +10,7 @@
   <script>
     document.documentElement.dataset.tema = localStorage.getItem("avalie-tema") === "dia" ? "dia" : "noite";
   </script>
-  <link rel="stylesheet" href="styles.css?v=eixo18" />
+  <link rel="stylesheet" href="styles.css?v=eixo19" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
 <body class="capa-ativa">
@@ -34,21 +34,11 @@
           <h1 class="capa-titulo" tabindex="-1">Secretaria de Educação de Pacajus</h1>
         </div>
         <div class="capa-cinco">
-          <button type="button" class="capa-card" data-capa-grupo="capaGrupoRede">
-            <strong>Avaliações da rede</strong>
-            <span>Visão geral, SPAECE, SAEP, diagnóstica, IDEB e as demais avaliações.</span>
-            <span class="capa-btn">Abrir</span>
-          </button>
-          <button type="button" class="capa-card" data-capa-grupo="capaGrupoAcomp">
-            <strong>Acompanhamento</strong>
-            <span>Protocolo, situação, emparelhar e alunos.</span>
-            <span class="capa-btn">Abrir</span>
-          </button>
-          <a class="capa-card" id="abrirCorretorCapa" href="corretor.html?v=eixo9" target="avalieCorretor">
+          <button type="button" class="capa-card" data-capa-grupo="capaGrupoEixo">
             <strong>Eixo de avaliação</strong>
-            <span>Abre o corretor, do 1º ao 9º ano.</span>
+            <span>Avaliações da rede, acompanhamento e o banco da avaliação.</span>
             <span class="capa-btn">Abrir</span>
-          </a>
+          </button>
           <a class="capa-card" id="abrirRealizarCapa" href="corretor.html?realizar=1&amp;v=eixo9" target="avalieCorretor">
             <strong>Realizar a avaliação</strong>
             <span>Abre o lançamento, na mesma janela do corretor.</span>
@@ -62,8 +52,30 @@
         </div>
       </div>
 
+      <div class="capa-palco capa-grupo" id="capaGrupoEixo" hidden>
+        <button type="button" class="capa-voltar" data-capa-voltar="capaCinco">Voltar</button>
+        <p class="capa-secretaria">Eixo de avaliação</p>
+        <div class="capa-cinco">
+          <button type="button" class="capa-card" data-capa-grupo="capaGrupoRede">
+            <strong>Avaliações da rede</strong>
+            <span>Visão geral, SPAECE, SAEP, diagnóstica, IDEB e as demais avaliações.</span>
+            <span class="capa-btn">Abrir</span>
+          </button>
+          <button type="button" class="capa-card" data-capa-grupo="capaGrupoAcomp">
+            <strong>Acompanhamento</strong>
+            <span>Protocolo, situação, emparelhar e alunos.</span>
+            <span class="capa-btn">Abrir</span>
+          </button>
+          <a class="capa-card" id="abrirCorretorCapa" href="corretor.html?v=eixo9" target="avalieCorretor">
+            <strong>Banco da avaliação</strong>
+            <span>Abre o corretor, do 1º ao 9º ano.</span>
+            <span class="capa-btn">Abrir</span>
+          </a>
+        </div>
+      </div>
+
       <div class="capa-palco capa-grupo" id="capaGrupoRede" hidden>
-        <button type="button" class="capa-voltar" data-capa-voltar>Voltar</button>
+        <button type="button" class="capa-voltar" data-capa-voltar="capaGrupoEixo">Voltar</button>
         <p class="capa-secretaria">Avaliações da rede</p>
         <div class="capa-edicao" role="group" aria-label="Edição do Avalie.CE">
           <button type="button" data-capa-edicao="2">2º Avalie.CE</button>
@@ -124,7 +136,7 @@
       </div>
 
       <div class="capa-palco capa-grupo" id="capaGrupoAcomp" hidden>
-        <button type="button" class="capa-voltar" data-capa-voltar>Voltar</button>
+        <button type="button" class="capa-voltar" data-capa-voltar="capaGrupoEixo">Voltar</button>
         <p class="capa-secretaria">Acompanhamento</p>
         <div class="capa-setores">
           <button type="button" class="capa-card" data-capa-page="protocolo">
@@ -151,7 +163,7 @@
       </div>
 
       <div class="capa-palco capa-grupo" id="capaGrupoRes" hidden>
-        <button type="button" class="capa-voltar" data-capa-voltar>Voltar</button>
+        <button type="button" class="capa-voltar" data-capa-voltar="capaCinco">Voltar</button>
         <p class="capa-secretaria">Resultados</p>
         <div class="capa-setores">
           <button type="button" class="capa-card" data-capa-page="rank">
@@ -1313,6 +1325,6 @@
   <script src="dados_consulta_aval_2ano.js"></script>
   <script src="dados_consulta_aval_5ano.js"></script>
   <script src="habilidades.js"></script>
-  <script src="app.js?v=eixo15"></script>
+  <script src="app.js?v=eixo19"></script>
 </body>
 </html>
