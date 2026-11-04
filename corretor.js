@@ -2452,7 +2452,7 @@
     else mostrarBanco();
   }
 
-  window.CORRETOR_VER = "eixo9";
+  window.CORRETOR_VER = "eixo21";
   window.corretorIrPara = function corretorIrPara(realizar) {
     iniciar();
     if (realizar) mostrarAplicacao();

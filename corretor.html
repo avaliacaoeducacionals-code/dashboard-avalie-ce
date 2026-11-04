@@ -9,11 +9,37 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet" />
   <script>
     document.documentElement.dataset.tema = localStorage.getItem("avalie-tema") === "dia" ? "dia" : "noite";
+    try {
+      var brutoAcesso = sessionStorage.getItem("avalie-acesso");
+      if (brutoAcesso && JSON.parse(brutoAcesso).login) document.documentElement.classList.add("acesso-ok");
+    } catch (e) {}
   </script>
-  <link rel="stylesheet" href="styles.css?v=eixo9" />
+  <style>
+    html:not(.acesso-ok) .capa,
+    html:not(.acesso-ok) .app,
+    html:not(.acesso-ok) #slideOverlay,
+    html:not(.acesso-ok) body.corretor-solo .main { display: none !important; }
+    html.acesso-ok #acesso { display: none !important; }
+  </style>
+  <link rel="stylesheet" href="styles.css?v=eixo21" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
 <body class="corretor-solo">
+  <div id="acesso" class="acesso">
+    <form id="acessoForm" class="acesso-card" autocomplete="on" novalidate>
+      <img src="assets/logo-eixo-avaliacao.png" alt="Eixo de Avaliação" />
+      <h1>Entrar</h1>
+      <p>Informe o login e a senha.</p>
+      <label>Login
+        <input id="acessoLogin" name="username" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" />
+      </label>
+      <label>Senha
+        <input id="acessoSenha" name="password" type="password" autocomplete="current-password" />
+      </label>
+      <p id="acessoErro" class="acesso-erro" role="alert" aria-live="polite"></p>
+      <button type="submit" class="capa-btn">Entrar</button>
+    </form>
+  </div>
   <main class="main">
     <header class="topbar">
       <div class="topbar-brand">
@@ -27,6 +53,10 @@
         <div class="logo-frame">
           <img class="logo-saep" src="assets/logo-saep.png" alt="SAEP — Sistema de Avaliação Educacional de Pacajus" />
         </div>
+      </div>
+      <div class="acesso-sessao">
+        <span class="acesso-escola-nome"></span>
+        <button type="button" class="btn-sair" data-acesso-sair>Sair</button>
       </div>
       <div class="tema-switch" role="group" aria-label="Aparência">
         <button type="button" id="btnTemaNoite" data-tema="noite">Noturno</button>
@@ -250,6 +280,8 @@
   <script src="habilidades.js?v=descritores1"></script>
   <script src="dados_rede.js?v=rede1"></script>
   <script src="dados_nominal.js?v=nomes1"></script>
-  <script src="corretor.js?v=eixo9"></script>
+  <script src="acesso.js?v=eixo21"></script>
+  <script src="acesso-login.js?v=eixo21"></script>
+  <script src="corretor.js?v=eixo21"></script>
 </body>
 </html>
