@@ -721,17 +721,27 @@
     `).join("");
   }
 
+  function atualizarBotaoExcluirEscola() {
+    const sel = $("crEscolasLista");
+    const btn = $("crDelEscola");
+    if (!btn) return;
+    btn.disabled = !(sel && sel.value);
+  }
+
   function pintarEscolas() {
-    const ul = $("crEscolasLista");
-    if (!pack.escolas.length) {
-      ul.innerHTML = "<li><span>Nenhuma escola cadastrada.</span></li>";
-    } else {
-      ul.innerHTML = pack.escolas.map((e) => `
-        <li>
-          <span>${esc(e.nome)}</span>
-          <button type="button" class="btn-compare corretor-excluir" data-del-escola="${esc(e.id)}">Excluir</button>
-        </li>
-      `).join("");
+    const menu = $("crEscolasLista");
+    const antes = menu ? menu.value : "";
+    if (menu) {
+      if (!pack.escolas.length) {
+        menu.innerHTML = `<option value="">Nenhuma escola cadastrada</option>`;
+        menu.value = "";
+      } else {
+        menu.innerHTML = `<option value="">Selecione a escola</option>` + pack.escolas.map((e) => `
+          <option value="${esc(e.id)}">${esc(e.nome)}</option>
+        `).join("");
+        menu.value = pack.escolas.some((e) => e.id === antes) ? antes : "";
+      }
+      atualizarBotaoExcluirEscola();
     }
     const sel = $("crEscola");
     const id = atual().escolaId;
@@ -1082,11 +1092,17 @@
       return;
     }
     gravarFormulario();
-    pack.escolas.push({ id: "e" + Date.now().toString(36) + Math.floor(Math.random() * 1000).toString(36), nome });
+    const id = "e" + Date.now().toString(36) + Math.floor(Math.random() * 1000).toString(36);
+    pack.escolas.push({ id, nome });
     pack.escolas.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
     $("crNovaEscola").value = "";
     salvar();
     pintarEscolas();
+    const menu = $("crEscolasLista");
+    if (menu) menu.value = id;
+    atualizarBotaoExcluirEscola();
+    pintarLancamentoContexto();
+    pintarAbrir();
   }
 
   function excluirEscola(id) {
@@ -1097,10 +1113,13 @@
       alert(`${escola.nome} está em uso na avaliação do ${uso.join(", ")}. Escolha outra escola nesses anos antes de excluir.`);
       return;
     }
+    if (!confirm(`Excluir a escola ${escola.nome}?`)) return;
     gravarFormulario();
     pack.escolas = pack.escolas.filter((e) => e.id !== id);
     salvar();
     pintarEscolas();
+    pintarLancamentoContexto();
+    pintarAbrir();
   }
 
   function adicionarDisciplina() {
@@ -1860,9 +1879,10 @@
     $("crNovaEscola").addEventListener("keydown", (ev) => {
       if (ev.key === "Enter") adicionarEscola();
     });
-    $("crEscolasLista").addEventListener("click", (ev) => {
-      const btn = ev.target.closest("[data-del-escola]");
-      if (btn) excluirEscola(btn.dataset.delEscola);
+    $("crEscolasLista").addEventListener("change", atualizarBotaoExcluirEscola);
+    $("crDelEscola").addEventListener("click", () => {
+      const id = $("crEscolasLista").value;
+      if (id) excluirEscola(id);
     });
     $("crAddDisciplina").addEventListener("click", adicionarDisciplina);
     $("crNovaDisciplina").addEventListener("keydown", (ev) => {

@@ -314,6 +314,26 @@ html:not([data-tema="dia"]) select option { color: #e8f2f6; background-color: #1
 }
 .corretor-escola-add { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .corretor-escola-add input { flex: 1; min-width: 220px; }
+.corretor-escola-menu {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 12px;
+}
+.corretor-escola-menu select {
+  flex: 1;
+  min-width: 280px;
+  max-width: 640px;
+  appearance: auto;
+  -webkit-appearance: menulist;
+  background-image: none;
+  background-color: var(--bg-2, #0c2430);
+  color: var(--text);
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.16));
+  border-radius: 8px;
+  padding: 8px 10px;
+}
 .corretor-escolas { list-style: none; margin: 12px 0 0; padding: 0; }
 .corretor-escolas li {
   display: flex; justify-content: space-between; align-items: center; gap: 8px;

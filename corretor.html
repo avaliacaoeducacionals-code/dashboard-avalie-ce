@@ -10,7 +10,7 @@
   <script>
     document.documentElement.dataset.tema = localStorage.getItem("avalie-tema") === "dia" ? "dia" : "noite";
   </script>
-  <link rel="stylesheet" href="styles.css?v=eixo2" />
+  <link rel="stylesheet" href="styles.css?v=eixo3" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
 <body class="corretor-solo">
@@ -74,7 +74,12 @@
         <input id="crNovaEscola" type="text" placeholder="Nome da escola" aria-label="Nome da escola para cadastrar" />
         <button type="button" id="crAddEscola" class="btn-compare">Adicionar escola</button>
       </div>
-      <ul id="crEscolasLista" class="corretor-escolas"></ul>
+      <div class="corretor-escola-menu">
+        <select id="crEscolasLista" aria-label="Escolas cadastradas">
+          <option value="">Selecione a escola</option>
+        </select>
+        <button type="button" id="crDelEscola" class="btn-compare corretor-excluir" disabled>Excluir</button>
+      </div>
     </article>
     <article class="card corretor-card">
       <h2>Disciplinas cadastradas</h2>
@@ -244,6 +249,6 @@
   <script src="habilidades.js?v=descritores1"></script>
   <script src="dados_rede.js?v=rede1"></script>
   <script src="dados_nominal.js?v=nomes1"></script>
-  <script src="corretor.js?v=eixo2"></script>
+  <script src="corretor.js?v=eixo3"></script>
 </body>
 </html>
