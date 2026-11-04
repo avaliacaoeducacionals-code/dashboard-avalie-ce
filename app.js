@@ -5191,13 +5191,33 @@ function aplicarFotoCapa(idx) {
   });
 }
 
+function mostrarCinco() {
+  document.querySelectorAll(".capa-grupo").forEach((el) => {
+    el.hidden = true;
+  });
+  const cinco = $("capaCinco");
+  if (cinco) cinco.hidden = false;
+  window.scrollTo(0, 0);
+}
+
+function abrirGrupoCapa(id) {
+  const cinco = $("capaCinco");
+  if (cinco) cinco.hidden = true;
+  document.querySelectorAll(".capa-grupo").forEach((el) => {
+    el.hidden = el.id !== id;
+  });
+  window.scrollTo(0, 0);
+  const titulo = document.querySelector("#" + id + " .capa-secretaria");
+  if (titulo) titulo.focus();
+}
+
 function mostrarCapa() {
   if (slideState.on) sairModoSlide();
   limparIdleSlide();
   document.body.classList.add("capa-ativa");
   document.title = "Eixo de Avaliação · Pacajus";
-  window.scrollTo(0, 0);
-  const titulo = document.querySelector(".capa-cartao h1");
+  mostrarCinco();
+  const titulo = document.querySelector(".capa-titulo");
   if (titulo) titulo.focus();
 }
 
@@ -6187,13 +6207,11 @@ if (!DATA) {
     });
   });
   if ($("btnVoltarCapa")) $("btnVoltarCapa").addEventListener("click", mostrarCapa);
-  document.querySelectorAll('a[href="#capaPaineis"]').forEach((a) => {
-    a.addEventListener("click", (ev) => {
-      const alvo = $("capaPaineis");
-      if (!alvo) return;
-      ev.preventDefault();
-      alvo.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
+  document.querySelectorAll("[data-capa-grupo]").forEach((btn) => {
+    btn.addEventListener("click", () => abrirGrupoCapa(btn.dataset.capaGrupo));
+  });
+  document.querySelectorAll("[data-capa-voltar]").forEach((btn) => {
+    btn.addEventListener("click", mostrarCinco);
   });
   aplicarFotoCapa(0);
   if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
