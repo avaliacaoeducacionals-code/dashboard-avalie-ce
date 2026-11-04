@@ -88,7 +88,12 @@
         <input id="crNovaDisciplina" type="text" placeholder="Nome da disciplina" aria-label="Nome da disciplina para cadastrar" />
         <button type="button" id="crAddDisciplina" class="btn-compare">Adicionar disciplina</button>
       </div>
-      <ul id="crDisciplinasLista" class="corretor-escolas"></ul>
+      <div class="corretor-escola-menu">
+        <select id="crDisciplinasLista" aria-label="Disciplinas cadastradas">
+          <option value="">Selecione a disciplina</option>
+        </select>
+        <button type="button" id="crDelDisciplina" class="btn-compare corretor-excluir" disabled>Excluir</button>
+      </div>
     </article>
     <article class="card corretor-card">
       <h2>Turmas cadastradas</h2>
@@ -97,7 +102,12 @@
         <input id="crNovaTurma" type="text" placeholder="Nome da turma" aria-label="Nome da turma para cadastrar" />
         <button type="button" id="crAddTurma" class="btn-compare">Adicionar turma</button>
       </div>
-      <ul id="crTurmasLista" class="corretor-escolas"></ul>
+      <div class="corretor-escola-menu">
+        <select id="crTurmasLista" aria-label="Turmas cadastradas">
+          <option value="">Selecione a turma</option>
+        </select>
+        <button type="button" id="crDelTurma" class="btn-compare corretor-excluir" disabled>Excluir</button>
+      </div>
     </article>
     <article class="card corretor-card">
       <h2>Alunos cadastrados</h2>
@@ -249,6 +259,6 @@
   <script src="habilidades.js?v=descritores1"></script>
   <script src="dados_rede.js?v=rede1"></script>
   <script src="dados_nominal.js?v=nomes1"></script>
-  <script src="corretor.js?v=eixo3"></script>
+  <script src="corretor.js?v=eixo4"></script>
 </body>
 </html>

@@ -752,17 +752,34 @@
     atual().escolaId = sel.value;
   }
 
+  function atualizarBotaoExcluirDisciplina() {
+    const sel = $("crDisciplinasLista");
+    const btn = $("crDelDisciplina");
+    if (!btn) return;
+    btn.disabled = !(sel && sel.value);
+  }
+
+  function atualizarBotaoExcluirTurma() {
+    const sel = $("crTurmasLista");
+    const btn = $("crDelTurma");
+    if (!btn) return;
+    btn.disabled = !(sel && sel.value);
+  }
+
   function pintarDisciplinas() {
-    const ul = $("crDisciplinasLista");
-    if (!pack.disciplinas.length) {
-      ul.innerHTML = "<li><span>Nenhuma disciplina cadastrada.</span></li>";
-    } else {
-      ul.innerHTML = pack.disciplinas.map((d) => `
-        <li>
-          <span>${esc(d.nome)}</span>
-          <button type="button" class="btn-compare corretor-excluir" data-del-disciplina="${esc(d.id)}">Excluir</button>
-        </li>
-      `).join("");
+    const menu = $("crDisciplinasLista");
+    const antes = menu ? menu.value : "";
+    if (menu) {
+      if (!pack.disciplinas.length) {
+        menu.innerHTML = `<option value="">Nenhuma disciplina cadastrada</option>`;
+        menu.value = "";
+      } else {
+        menu.innerHTML = `<option value="">Selecione a disciplina</option>` + pack.disciplinas.map((d) => `
+          <option value="${esc(d.id)}">${esc(d.nome)}</option>
+        `).join("");
+        menu.value = pack.disciplinas.some((d) => d.id === antes) ? antes : "";
+      }
+      atualizarBotaoExcluirDisciplina();
     }
     const sel = $("crDisciplina");
     const id = atual().disciplinaId;
@@ -774,17 +791,20 @@
   }
 
   function pintarTurmas() {
-    const ul = $("crTurmasLista");
+    const menu = $("crTurmasLista");
     const turmas = pack.turmas || [];
-    if (!turmas.length) {
-      ul.innerHTML = "<li><span>Nenhuma turma cadastrada.</span></li>";
-    } else {
-      ul.innerHTML = turmas.map((t) => `
-        <li>
-          <span>${esc(t.nome)}</span>
-          <button type="button" class="btn-compare corretor-excluir" data-del-turma="${esc(t.id)}">Excluir</button>
-        </li>
-      `).join("");
+    const antes = menu ? menu.value : "";
+    if (menu) {
+      if (!turmas.length) {
+        menu.innerHTML = `<option value="">Nenhuma turma cadastrada</option>`;
+        menu.value = "";
+      } else {
+        menu.innerHTML = `<option value="">Selecione a turma</option>` + turmas.map((t) => `
+          <option value="${esc(t.id)}">${esc(t.nome)}</option>
+        `).join("");
+        menu.value = turmas.some((t) => t.id === antes) ? antes : "";
+      }
+      atualizarBotaoExcluirTurma();
     }
     const sel = $("crTurma");
     const id = atual().turmaId || "";
@@ -1134,11 +1154,17 @@
       return;
     }
     gravarFormulario();
-    pack.disciplinas.push({ id: "d" + Date.now().toString(36) + Math.floor(Math.random() * 1000).toString(36), nome });
+    const id = "d" + Date.now().toString(36) + Math.floor(Math.random() * 1000).toString(36);
+    pack.disciplinas.push({ id, nome });
     pack.disciplinas.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
     $("crNovaDisciplina").value = "";
     salvar();
     pintarDisciplinas();
+    const menu = $("crDisciplinasLista");
+    if (menu) menu.value = id;
+    atualizarBotaoExcluirDisciplina();
+    pintarLancamentoContexto();
+    pintarAbrir();
   }
 
   function excluirDisciplina(id) {
@@ -1149,10 +1175,13 @@
       alert(`${disciplina.nome} está em uso na avaliação do ${uso.join(", ")}. Escolha outra disciplina nesses anos antes de excluir.`);
       return;
     }
+    if (!confirm(`Excluir a disciplina ${disciplina.nome}?`)) return;
     gravarFormulario();
     pack.disciplinas = pack.disciplinas.filter((d) => d.id !== id);
     salvar();
     pintarDisciplinas();
+    pintarLancamentoContexto();
+    pintarAbrir();
   }
 
   function adicionarTurma() {
@@ -1167,14 +1196,17 @@
       return;
     }
     gravarFormulario();
-    pack.turmas.push({
-      id: "t" + Date.now().toString(36) + Math.floor(Math.random() * 1000).toString(36),
-      nome,
-    });
+    const id = "t" + Date.now().toString(36) + Math.floor(Math.random() * 1000).toString(36);
+    pack.turmas.push({ id, nome });
     pack.turmas.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR", { numeric: true }));
     $("crNovaTurma").value = "";
     salvar();
     pintarTurmas();
+    const menu = $("crTurmasLista");
+    if (menu) menu.value = id;
+    atualizarBotaoExcluirTurma();
+    pintarLancamentoContexto();
+    pintarAbrir();
   }
 
   function excluirTurma(id) {
@@ -1185,12 +1217,16 @@
       const onde = uso.map((ano) => ano + " ano").join(", ");
       const segue = confirm(`${turma.nome} está escolhida no ${onde}. A seleção será limpa nesses anos. Alunos e gabarito permanecem. Excluir a turma?`);
       if (!segue) return;
+    } else if (!confirm(`Excluir a turma ${turma.nome}?`)) {
+      return;
     }
     gravarFormulario();
     uso.forEach((ano) => { pack.anos[ano].turmaId = ""; });
     pack.turmas = pack.turmas.filter((t) => t.id !== id);
     salvar();
     pintarTurmas();
+    pintarLancamentoContexto();
+    pintarAbrir();
   }
 
   function selecionarAno(ano) {
@@ -1888,17 +1924,19 @@
     $("crNovaDisciplina").addEventListener("keydown", (ev) => {
       if (ev.key === "Enter") adicionarDisciplina();
     });
-    $("crDisciplinasLista").addEventListener("click", (ev) => {
-      const btn = ev.target.closest("[data-del-disciplina]");
-      if (btn) excluirDisciplina(btn.dataset.delDisciplina);
+    $("crDisciplinasLista").addEventListener("change", atualizarBotaoExcluirDisciplina);
+    $("crDelDisciplina").addEventListener("click", () => {
+      const id = $("crDisciplinasLista").value;
+      if (id) excluirDisciplina(id);
     });
     $("crAddTurma").addEventListener("click", adicionarTurma);
     $("crNovaTurma").addEventListener("keydown", (ev) => {
       if (ev.key === "Enter") adicionarTurma();
     });
-    $("crTurmasLista").addEventListener("click", (ev) => {
-      const btn = ev.target.closest("[data-del-turma]");
-      if (btn) excluirTurma(btn.dataset.delTurma);
+    $("crTurmasLista").addEventListener("change", atualizarBotaoExcluirTurma);
+    $("crDelTurma").addEventListener("click", () => {
+      const id = $("crTurmasLista").value;
+      if (id) excluirTurma(id);
     });
     $("crAddAlunoCadastro").addEventListener("click", adicionarAlunoCadastro);
     $("crNovoAluno").addEventListener("keydown", (ev) => {
