@@ -323,6 +323,11 @@ function atualizarNavEdicao() {
   if (btnAlunos) btnAlunos.classList.toggle("hidden", !f.temAlunos);
   const sm = document.querySelector(".brand small");
   if (sm) sm.textContent = f.edicao === "1" ? "SAEP · 1º Avalie.CE" : "SAEP · 2º Avalie.CE";
+  document.querySelectorAll("[data-capa-edicao]").forEach((b) => {
+    b.classList.toggle("is-on", b.dataset.capaEdicao === f.edicao);
+  });
+  const cardAlunos = document.querySelector('[data-capa-page="alunos"]');
+  if (cardAlunos) cardAlunos.classList.toggle("hidden", !f.temAlunos);
 }
 
 function setEdicaoAvalie(ed) {
@@ -5133,7 +5138,78 @@ function goto(page) {
   const titles = titulosPagina(page);
   $("pageTitle").textContent = titles[0];
   $("pageSubtitle").textContent = titles[1];
+  document.title = titles[0] + " · Eixo de Avaliação";
   render();
+}
+
+const CAPA_FOTOS = [
+  {
+    id: "spaece",
+    src: "assets/capa-spaece-run.jpg",
+    alt: "SPAECE RUN XP. Correndo em busca de resultados. Inscrições abertas. Público-alvo: 9º ano. Secretaria de Educação de Pacajus.",
+    legenda: "SPAECE RUN XP",
+  },
+  {
+    id: "ideb",
+    src: "assets/capa-ideb-2025.jpg",
+    alt: "Resultado IDEB 2025. Pacajus: anos iniciais 7,1 e anos finais 5,6. Superamos a média nacional!",
+    legenda: "Resultado IDEB 2025",
+  },
+  {
+    id: "servidor",
+    src: "assets/capa-servidor.jpg",
+    alt: "28 de Outubro. Dia do Servidor Público. Secretaria de Educação de Pacajus.",
+    legenda: "Dia do Servidor Público",
+  },
+];
+
+let capaFotoIdx = 0;
+let capaFotoManual = false;
+
+function aplicarFotoCapa(idx) {
+  const foto = CAPA_FOTOS[idx];
+  if (!foto) return;
+  capaFotoIdx = idx;
+  const poster = $("capaPoster");
+  const fundo = $("capaFundo");
+  const hero = $("capaHero");
+  const legenda = $("capaLegenda");
+  if (poster) {
+    poster.src = foto.src;
+    poster.alt = foto.alt;
+  }
+  if (fundo) fundo.src = foto.src;
+  if (legenda) legenda.textContent = foto.legenda;
+  if (hero) {
+    hero.classList.remove("is-spaece", "is-ideb", "is-servidor");
+    hero.classList.add("is-" + foto.id);
+  }
+  document.querySelectorAll("[data-capa-foto]").forEach((btn) => {
+    const on = Number(btn.dataset.capaFoto) === idx;
+    btn.classList.toggle("is-on", on);
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
+  });
+}
+
+function mostrarCapa() {
+  if (slideState.on) sairModoSlide();
+  limparIdleSlide();
+  document.body.classList.add("capa-ativa");
+  document.title = "Eixo de Avaliação · Pacajus";
+  window.scrollTo(0, 0);
+  const titulo = document.querySelector(".capa-cartao h1");
+  if (titulo) titulo.focus();
+}
+
+function abrirPainelDaCapa(page) {
+  document.body.classList.remove("capa-ativa");
+  window.scrollTo(0, 0);
+  const main = document.querySelector(".main");
+  if (main) void main.offsetWidth;
+  goto(page);
+  armarIdleSlide();
+  const voltar = $("btnVoltarCapa");
+  if (voltar) voltar.focus({ preventScroll: true });
 }
 
 function rotuloAnoDisc(ano, disc) {
@@ -5939,11 +6015,13 @@ function entrarModoSlide(opts) {
 function armarIdleSlide() {
   limparIdleSlide();
   if (slideState.on) return;
+  if (document.body.classList.contains("capa-ativa")) return;
   slideState.idle = setTimeout(() => entrarModoSlide({ pedirFs: true }), 90000);
 }
 
 function onAtividadeSlide(ev) {
   if (slideState.on) return;
+  if (document.body.classList.contains("capa-ativa")) return;
   if (ev.type === "mousemove") {
     const now = Date.now();
     if (now - slideState.lastMove < 1200) return;
@@ -6079,5 +6157,50 @@ if (!DATA) {
   if (btnComp) btnComp.addEventListener("click", () => goto("comparar"));
   const btnRank = $("btnRank");
   if (btnRank) btnRank.addEventListener("click", () => goto("rank"));
-  goto("geral");
+  const abrirCorretorCapa = $("abrirCorretorCapa");
+  if (abrirCorretorCapa) abrirCorretorCapa.addEventListener("click", (ev) => abrirCorretorJanela(ev, false));
+  const abrirRealizarCapa = $("abrirRealizarCapa");
+  if (abrirRealizarCapa) abrirRealizarCapa.addEventListener("click", (ev) => abrirCorretorJanela(ev, true));
+  document.querySelectorAll("[data-capa-page]").forEach((btn) => {
+    btn.addEventListener("click", () => abrirPainelDaCapa(btn.dataset.capaPage));
+  });
+  document.querySelectorAll("[data-capa-edicao]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const ed = btn.dataset.capaEdicao === "1" ? "1" : "2";
+      if (!document.body.classList.contains("capa-ativa")) {
+        setEdicaoAvalie(ed);
+        return;
+      }
+      state.edicao = ed;
+      try { localStorage.setItem("avalie-edicao", state.edicao); } catch (e) { /* ignore */ }
+      const sel = $("selEdicaoAvalie");
+      if (sel) sel.value = state.edicao;
+      atualizarNavEdicao();
+      atualizarMetaFonte();
+      setupFilters();
+    });
+  });
+  document.querySelectorAll("[data-capa-foto]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      capaFotoManual = true;
+      aplicarFotoCapa(Number(btn.dataset.capaFoto));
+    });
+  });
+  if ($("btnVoltarCapa")) $("btnVoltarCapa").addEventListener("click", mostrarCapa);
+  document.querySelectorAll('a[href="#capaPaineis"]').forEach((a) => {
+    a.addEventListener("click", (ev) => {
+      const alvo = $("capaPaineis");
+      if (!alvo) return;
+      ev.preventDefault();
+      alvo.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
+  aplicarFotoCapa(0);
+  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    setInterval(() => {
+      if (capaFotoManual) return;
+      if (!document.body.classList.contains("capa-ativa")) return;
+      aplicarFotoCapa((capaFotoIdx + 1) % CAPA_FOTOS.length);
+    }, 8000);
+  }
 }

@@ -3,17 +3,167 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Dashboard Avalie.CE 2026</title>
+  <title>Eixo de Avaliação · Pacajus</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet" />
   <script>
     document.documentElement.dataset.tema = localStorage.getItem("avalie-tema") === "dia" ? "dia" : "noite";
   </script>
-  <link rel="stylesheet" href="styles.css?v=eixo9" />
+  <link rel="stylesheet" href="styles.css?v=eixo11" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
-<body>
+<body class="capa-ativa">
+  <div class="capa" id="capa">
+    <header class="capa-topo">
+      <div class="capa-topo-marca">
+        <img src="assets/logo-eixo-avaliacao.png" alt="Eixo de Avaliação" />
+        <img src="assets/logo-saep.png" alt="SAEP — Sistema de Avaliação Educacional de Pacajus" />
+        <div class="capa-topo-nome">
+          <strong>Eixo de Avaliação</strong>
+          <small>Pacajus</small>
+        </div>
+      </div>
+      <a class="capa-btn" href="#capaPaineis">Ver os painéis</a>
+    </header>
+
+    <section class="capa-hero is-spaece" id="capaHero" aria-label="Capa">
+      <img class="capa-fundo" id="capaFundo" src="assets/capa-spaece-run.jpg" alt="" aria-hidden="true" />
+      <article class="capa-cartao">
+        <p class="capa-kicker">Secretaria de Educação de Pacajus</p>
+        <h1 tabindex="-1">Eixo de Avaliação, Pacajus</h1>
+        <p>Painéis da rede municipal. Cada cartão abre a mesma tela que o menu já abre hoje.</p>
+        <a class="capa-btn capa-btn-grande" href="#capaPaineis">Ver os painéis</a>
+      </article>
+      <div class="capa-poster-wrap">
+        <img class="capa-poster" id="capaPoster" src="assets/capa-spaece-run.jpg" alt="SPAECE RUN XP. Correndo em busca de resultados. Inscrições abertas. Público-alvo: 9º ano. Secretaria de Educação de Pacajus." />
+        <p class="capa-legenda" id="capaLegenda">SPAECE RUN XP</p>
+      </div>
+      <div class="capa-thumbs" role="group" aria-label="Fotos da capa">
+        <button type="button" class="capa-thumb is-on" data-capa-foto="0" aria-pressed="true">
+          <img src="assets/capa-spaece-run.jpg" alt="" />
+          <span>SPAECE RUN XP</span>
+        </button>
+        <button type="button" class="capa-thumb" data-capa-foto="1" aria-pressed="false">
+          <img src="assets/capa-ideb-2025.jpg" alt="" />
+          <span>Resultado IDEB 2025</span>
+        </button>
+        <button type="button" class="capa-thumb" data-capa-foto="2" aria-pressed="false">
+          <img src="assets/capa-servidor.jpg" alt="" />
+          <span>Dia do Servidor Público</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="capa-paineis" id="capaPaineis" aria-label="Painéis">
+      <div class="capa-miolo">
+        <h2>Avalie.CE</h2>
+        <p class="capa-intro">A edição vale para Visão geral, Escolas, Descritores, Turmas e Alunos.</p>
+        <div class="capa-edicao" role="group" aria-label="Edição do Avalie.CE">
+          <button type="button" data-capa-edicao="2">2º Avalie.CE</button>
+          <button type="button" data-capa-edicao="1">1º Avalie.CE</button>
+        </div>
+        <div class="capa-grade">
+          <button type="button" class="capa-card" data-capa-page="geral">
+            <strong>Visão geral</strong>
+            <span>Resultados consolidados e colocação das escolas no Avalie.CE.</span>
+          </button>
+          <button type="button" class="capa-card" data-capa-page="escolas">
+            <strong>Escolas</strong>
+            <span>Colocação das escolas no recorte de ano e disciplina.</span>
+          </button>
+          <button type="button" class="capa-card" data-capa-page="descritores">
+            <strong>Descritores</strong>
+            <span>Habilidades com menor e maior percentual de acerto.</span>
+          </button>
+          <button type="button" class="capa-card" data-capa-page="turmas">
+            <strong>Turmas</strong>
+            <span>Desempenho de cada turma no Avalie.CE.</span>
+          </button>
+          <button type="button" class="capa-card" data-capa-page="alunos">
+            <strong>Alunos</strong>
+            <span>Busca nominal de estudantes no Avalie.CE.</span>
+          </button>
+          <button type="button" class="capa-card" data-capa-page="comparar">
+            <strong>1º × 2º Avalie</strong>
+            <span>Comparação entre as duas edições do Avalie.CE.</span>
+          </button>
+        </div>
+
+        <h2>Avaliações da rede</h2>
+        <p class="capa-intro">SPAECE, SAEP, diagnóstica e IDEB, cada um no próprio painel.</p>
+        <div class="capa-grade">
+          <button type="button" class="capa-card" data-capa-page="spaece">
+            <strong>SPAECE 2025</strong>
+            <span>Proficiência e padrões do export CAEd em Pacajus.</span>
+          </button>
+          <button type="button" class="capa-card" data-capa-page="saep1">
+            <strong>1º SAEP</strong>
+            <span>Notas de 0 a 10 por turma, Português e Matemática.</span>
+          </button>
+          <button type="button" class="capa-card" data-capa-page="diag">
+            <strong>Diagnóstica</strong>
+            <span>Notas de 0 a 10 da avaliação diagnóstica, por turma.</span>
+          </button>
+          <button type="button" class="capa-card" data-capa-page="ideb">
+            <strong>IDEB 2025</strong>
+            <span>Notas do INEP das escolas municipais de Pacajus.</span>
+          </button>
+        </div>
+
+        <h2>Acompanhamento</h2>
+        <p class="capa-intro">Protocolo, situação, emparelhamento, cartas e consultas.</p>
+        <div class="capa-grade">
+          <button type="button" class="capa-card" data-capa-page="protocolo">
+            <strong>Protocolo</strong>
+            <span>Protocolo de Acompanhamento do 1º ao 9º ano.</span>
+          </button>
+          <button type="button" class="capa-card" data-capa-page="situacao">
+            <strong>Situação</strong>
+            <span>Intervenções a partir do Protocolo, em Português e Matemática.</span>
+          </button>
+          <button type="button" class="capa-card" data-capa-page="par">
+            <strong>Emparelhar</strong>
+            <span>Diagnóstica, SAEP, Avalie, IDEB e SPAECE na mesma escola.</span>
+          </button>
+          <button type="button" class="capa-card" data-capa-page="cartas">
+            <strong>Cartas PDF</strong>
+            <span>Cartas por avaliação, prontas para imprimir ou salvar em PDF.</span>
+          </button>
+          <button type="button" class="capa-card" data-capa-page="rank">
+            <strong>Resultado ranqueado</strong>
+            <span>Colocação das escolas por avaliação e ano.</span>
+          </button>
+          <button type="button" class="capa-card" data-capa-page="rankgeral">
+            <strong>Ranking geral</strong>
+            <span>Protocolo do 1º ao 9º ano em uma só colocação.</span>
+          </button>
+          <button type="button" class="capa-card" data-capa-page="linhas">
+            <strong>Gráficos de linhas</strong>
+            <span>Sequência do emparelhamento por ano, escola ou município.</span>
+          </button>
+          <button type="button" class="capa-card" data-capa-page="consulta">
+            <strong>Consulta de avaliação</strong>
+            <span>Questões do 2º simulado LP-MAT, no 2º, 5º ou 9º ano.</span>
+          </button>
+        </div>
+
+        <h2>Corretor</h2>
+        <p class="capa-intro">A mesma janela que o menu já abre. A capa permanece aqui.</p>
+        <div class="capa-grade">
+          <a class="capa-card capa-card-janela" id="abrirCorretorCapa" href="corretor.html?v=eixo9" target="avalieCorretor">
+            <strong>Eixo de avaliação</strong>
+            <span>Abre o corretor, do 1º ao 9º ano, na janela já usada pelo menu.</span>
+          </a>
+          <a class="capa-card capa-card-janela" id="abrirRealizarCapa" href="corretor.html?realizar=1&amp;v=eixo9" target="avalieCorretor">
+            <strong>Realizar a avaliação</strong>
+            <span>Abre o lançamento da avaliação, na mesma janela do corretor.</span>
+          </a>
+        </div>
+      </div>
+    </section>
+  </div>
+
   <div class="app">
     <aside class="sidebar">
       <div class="brand">
@@ -69,6 +219,7 @@
             <img class="logo-eixo" src="assets/logo-eixo-avaliacao.png" alt="Eixo de Avaliação" />
           </div>
           <div class="topbar-copy">
+            <button type="button" id="btnVoltarCapa" class="btn-voltar-capa">Voltar ao início</button>
             <h1 id="pageTitle">Visão geral da rede</h1>
             <p id="pageSubtitle">Resultados consolidados das planilhas escolares</p>
           </div>
@@ -1147,6 +1298,6 @@
   <script src="dados_consulta_aval_2ano.js"></script>
   <script src="dados_consulta_aval_5ano.js"></script>
   <script src="habilidades.js"></script>
-  <script src="app.js?v=eixo9"></script>
+  <script src="app.js?v=eixo11"></script>
 </body>
 </html>

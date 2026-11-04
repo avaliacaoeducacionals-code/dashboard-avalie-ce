@@ -1923,6 +1923,297 @@ html[data-tema="dia"] .rank-3 { color: #9a6b3a; }
 }
 .mini-bar span { display: block; height: 100%; }
 
+.btn-voltar-capa {
+  border: 0;
+  background: #1f8a4c;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin: 0 0 10px;
+  cursor: pointer;
+}
+.btn-voltar-capa:hover { background: #18753f; }
+.btn-voltar-capa:focus-visible { outline: 3px solid #142018; outline-offset: 2px; }
+
+html:has(body.capa-ativa) { scroll-behavior: smooth; }
+body.capa-ativa { background: #e7f0ea; }
+body.capa-ativa .app { display: none; }
+body:not(.capa-ativa) .capa { display: none; }
+
+.capa { color: #102027; background: #e7f0ea; }
+.capa-topo {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 18px;
+  flex-wrap: wrap;
+  padding: 10px 22px;
+  background: #fff;
+  border-bottom: 1px solid #e4eee8;
+}
+.capa-topo-marca { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.capa-topo-marca img {
+  display: block;
+  height: 48px;
+  width: auto;
+  max-width: 140px;
+  object-fit: contain;
+}
+.capa-topo-nome { min-width: 0; }
+.capa-topo-nome strong { display: block; font-size: 16px; line-height: 1.2; color: #102027; }
+.capa-topo-nome small { display: block; color: #4d6a78; font-size: 13px; }
+
+.capa-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5c400;
+  color: #142018;
+  text-decoration: none;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 12px 18px;
+  line-height: 1.2;
+  border: 0;
+}
+.capa-btn:hover { background: #e0b200; }
+.capa-btn:focus-visible { outline: 3px solid #142018; outline-offset: 2px; }
+.capa-btn-grande { padding: 14px 22px; font-size: 17px; }
+
+.capa-hero {
+  position: relative;
+  isolation: isolate;
+  min-height: calc(100svh - 76px);
+  display: grid;
+  grid-template-columns: minmax(280px, 440px) minmax(0, 1fr);
+  grid-template-areas:
+    "cartao poster"
+    "thumbs thumbs";
+  gap: 22px 32px;
+  align-items: center;
+  align-content: center;
+  grid-template-rows: auto auto;
+  padding: 28px 36px 24px;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+.capa-hero.is-ideb {
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 440px);
+  grid-template-areas:
+    "poster cartao"
+    "thumbs thumbs";
+}
+.capa-fundo {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  filter: blur(16px);
+  transform: scale(1.08);
+}
+.capa-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: rgba(6, 32, 22, 0.55);
+}
+.capa-cartao {
+  grid-area: cartao;
+  background: #f6faf7;
+  color: #102027;
+  border-radius: 22px;
+  padding: 28px 26px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+}
+.capa-kicker {
+  margin: 0 0 8px;
+  color: #1f7a45;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.capa-cartao h1 {
+  margin: 0 0 10px;
+  font-size: 34px;
+  line-height: 1.15;
+  color: #102027;
+}
+.capa-cartao p { margin: 0 0 18px; color: #3d5966; line-height: 1.45; }
+.capa-poster-wrap {
+  grid-area: poster;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+.capa-poster {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: min(100%, 460px);
+  max-height: min(68vh, 740px);
+  object-fit: contain;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.28);
+}
+.capa-legenda {
+  margin: 12px 0 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(8, 30, 20, 0.78);
+  color: #fff;
+  font-weight: 700;
+  text-align: center;
+}
+.capa-thumbs {
+  grid-area: thumbs;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  width: min(100%, 780px);
+  min-width: 0;
+  justify-self: center;
+}
+.capa-thumb {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 8px;
+  border: 2px solid transparent;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #102027;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+}
+.capa-thumb img {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: 86px;
+  object-fit: contain;
+  object-position: center top;
+  background: #fff;
+}
+.capa-thumb span { font-size: 13px; line-height: 1.3; }
+.capa-thumb.is-on { border-color: #f5c400; }
+.capa-thumb:focus-visible { outline: 3px solid #f5c400; outline-offset: 2px; }
+
+.capa-paineis {
+  scroll-margin-top: 84px;
+  padding: 36px 22px 72px;
+}
+.capa-miolo { max-width: 1120px; margin: 0 auto; }
+.capa-paineis h2 {
+  margin: 28px 0 6px;
+  font-size: 22px;
+  color: #102027;
+}
+.capa-paineis h2:first-child { margin-top: 0; }
+.capa-intro { margin: 0 0 14px; color: #3d5966; }
+.capa-edicao {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+.capa-edicao button {
+  border: 1px solid #cfe0d6;
+  background: #fff;
+  color: #102027;
+  font: inherit;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+.capa-edicao button.is-on {
+  background: #1f8a4c;
+  border-color: #1f8a4c;
+  color: #fff;
+}
+.capa-edicao button:focus-visible { outline: 3px solid #142018; outline-offset: 2px; }
+.capa-grade {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+.capa-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  min-height: 132px;
+  margin: 0;
+  padding: 18px 16px;
+  border: 1px solid #d7e4dc;
+  border-radius: 16px;
+  background: #fff;
+  color: #102027;
+  box-shadow: 0 8px 22px rgba(16, 39, 51, 0.06);
+  text-align: left;
+  text-decoration: none;
+  font: inherit;
+  cursor: pointer;
+}
+.capa-card strong { font-size: 17px; line-height: 1.25; color: #102027; }
+.capa-card span { color: #3d5966; font-size: 14px; line-height: 1.4; }
+.capa-card:hover { border-color: #1f8a4c; }
+.capa-card:focus-visible { outline: 3px solid #1f8a4c; outline-offset: 2px; }
+.capa-card.hidden { display: none; }
+
+@media (max-width: 1100px) {
+  .capa-grade { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 860px) {
+  .capa-hero,
+  .capa-hero.is-ideb {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "poster"
+      "cartao"
+      "thumbs";
+    min-height: calc(100svh - 76px);
+    padding: 16px 16px 20px;
+  }
+  .capa-cartao h1 { font-size: 28px; }
+  .capa-poster { max-height: 52vh; }
+}
+@media (max-width: 700px) {
+  .capa-topo { padding: 10px 14px; }
+  .capa-topo-marca img { height: 40px; max-width: 96px; }
+  .capa-grade { grid-template-columns: 1fr; }
+  .capa-thumb span { font-size: 12px; }
+  .capa-thumb img { height: 72px; }
+}
+
+@media print {
+  .capa,
+  .btn-voltar-capa { display: none !important; }
+}
+
 @media (max-width: 1100px) {
   .app { grid-template-columns: 1fr; }
   .sidebar { flex-direction: row; align-items: center; }
