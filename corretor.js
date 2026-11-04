@@ -20,6 +20,8 @@
   let ouvindo = false;
   let iniciado = false;
   let iniciando = false;
+  let provaEmTela = "";
+  let gabaritoDomDaProva = "";
 
   function soltarRotulosGlobais() {
     try {
@@ -97,6 +99,8 @@
       ANOS.forEach((a) => {
         const salvo = data.anos && data.anos[a];
         if (salvo && typeof salvo === "object") base.anos[a] = { ...anoVazio(), ...salvo };
+        garantirProvas(base.anos[a], base.disciplinas);
+        carregarProva(base.anos[a], base.anos[a].disciplinaId || "");
       });
       base.fechamentos = {};
       if (data.fechamentos && typeof data.fechamentos === "object" && !Array.isArray(data.fechamentos)) {
@@ -129,6 +133,101 @@
   function nomeDisciplina(id) {
     const hit = pack.disciplinas.find((d) => d.id === id);
     return hit ? hit.nome : "";
+  }
+
+  function idPortuguesDe(lista) {
+    const hit = (lista || []).find((d) => fold(d.nome) === "PORTUGUES");
+    return hit ? hit.id : "d-portugues";
+  }
+
+  function copiarQuestao(q) {
+    const base = q && typeof q === "object" ? { ...q } : {};
+    const type = base.type === "5" || base.type === "2" ? base.type : "4";
+    return { ...base, type, correct: base.correct ? String(base.correct) : "1" };
+  }
+
+  function garantirProvas(ano, disciplinas) {
+    if (!ano.provas || typeof ano.provas !== "object" || Array.isArray(ano.provas)) ano.provas = {};
+    const temProva = Object.keys(ano.provas).some((id) => ano.provas[id] && Array.isArray(ano.provas[id].questions));
+    const legado = Array.isArray(ano.questions) ? ano.questions.map(copiarQuestao) : [];
+    if (!temProva && legado.length) {
+      const destino = ano.disciplinaId || idPortuguesDe(disciplinas || (pack && pack.disciplinas));
+      ano.provas[destino] = {
+        nQuestoes: Math.max(1, Number(ano.nQuestoes) || legado.length || 10),
+        questions: legado,
+      };
+      ano.gabaritoLegadoEm = destino;
+    }
+    Object.keys(ano.provas).forEach((id) => {
+      const prova = ano.provas[id];
+      if (!prova || typeof prova !== "object" || Array.isArray(prova)) {
+        ano.provas[id] = { nQuestoes: 10, questions: [] };
+        return;
+      }
+      prova.questions = Array.isArray(prova.questions) ? prova.questions.map(copiarQuestao) : [];
+      prova.nQuestoes = Math.max(1, Number(prova.nQuestoes) || prova.questions.length || 10);
+    });
+    return ano.provas;
+  }
+
+  function carregarProva(ano, id) {
+    const provas = garantirProvas(ano);
+    if (!id) {
+      ano.nQuestoes = 10;
+      ano.questions = [];
+      return;
+    }
+    if (!provas[id]) provas[id] = { nQuestoes: 10, questions: [] };
+    ano.nQuestoes = provas[id].nQuestoes;
+    ano.questions = provas[id].questions;
+  }
+
+  function gravarProva(ano, id) {
+    if (!id) return;
+    const provas = garantirProvas(ano);
+    provas[id] = {
+      nQuestoes: Math.max(1, Number(ano.nQuestoes) || 10),
+      questions: Array.isArray(ano.questions) ? ano.questions.map(copiarQuestao) : [],
+    };
+    ano.nQuestoes = provas[id].nQuestoes;
+    ano.questions = provas[id].questions;
+  }
+
+  function lerNumeroQuestoesDoDom(ano) {
+    if (!$("crNQuest")) return Math.max(1, Number(ano.nQuestoes) || 10);
+    return Math.max(1, Number($("crNQuest").value) || ano.nQuestoes || 10);
+  }
+
+  function definirDisciplina(novaId) {
+    const a = atual();
+    const dono = provaEmTela || "";
+    const domOk = !!dono && gabaritoDomDaProva === dono;
+    if (domOk) {
+      a.nQuestoes = lerNumeroQuestoesDoDom(a);
+      if (document.querySelector("#crGabarito .corretor-q")) a.questions = lerQuestoesDoDom();
+      gravarProva(a, dono);
+    }
+    a.disciplinaId = novaId || "";
+    carregarProva(a, a.disciplinaId);
+    provaEmTela = a.disciplinaId;
+    gabaritoDomDaProva = "";
+    if ($("crDisciplina")) $("crDisciplina").value = a.disciplinaId;
+    ["crLancDisciplina", "crAbrirDisciplina"].forEach((campo) => {
+      const el = $(campo);
+      if (!el) return;
+      const existe = [...el.options].some((op) => op.value === a.disciplinaId);
+      if (existe) el.value = a.disciplinaId;
+    });
+  }
+
+  function atualizarTelaDaProva() {
+    pintarCampos();
+    pintarGabarito();
+    pintarRespostas();
+    pintarAlunos();
+    pintarAbrir();
+    const aviso = $("crSemGabarito");
+    if (aviso) aviso.hidden = atual().questions.length > 0;
   }
 
   function normalizarTurma(nome) {
@@ -682,16 +781,23 @@
     const a = atual();
     const escola = $("crEscola");
     if (escola) a.escolaId = escola.value;
-    const disciplina = $("crDisciplina");
-    if (disciplina) a.disciplinaId = disciplina.value;
     const turma = $("crTurma");
     if (turma) a.turmaId = turma.value;
     if ($("crNome")) a.nome = $("crNome").value.trim();
     if ($("crData")) a.data = $("crData").value;
     if ($("crMatriculados")) a.matriculados = $("crMatriculados").value;
-    if ($("crNQuest")) a.nQuestoes = Math.max(1, Number($("crNQuest").value) || a.nQuestoes || 10);
     if (document.querySelector("#crEscalas .corretor-escala")) a.escalas = lerEscalas();
-    if (document.querySelector("#crGabarito .corretor-q")) a.questions = lerQuestoesDoDom();
+    const disciplina = $("crDisciplina");
+    const nova = disciplina ? disciplina.value : (a.disciplinaId || "");
+    if (nova !== (provaEmTela || "")) {
+      definirDisciplina(nova);
+      return;
+    }
+    if (provaEmTela && gabaritoDomDaProva === provaEmTela) {
+      a.nQuestoes = lerNumeroQuestoesDoDom(a);
+      if (document.querySelector("#crGabarito .corretor-q")) a.questions = lerQuestoesDoDom();
+      gravarProva(a, provaEmTela);
+    }
   }
 
   function nivelDe(p) {
@@ -857,6 +963,7 @@
         </div>
       `;
     }).join("");
+    gabaritoDomDaProva = provaEmTela || "";
     $("crLancamento").hidden = false;
     const aviso = $("crSemGabarito");
     if (aviso) aviso.hidden = qs.length > 0;
@@ -1034,8 +1141,8 @@
     const disciplina = $("crLancDisciplina");
     const turma = $("crLancTurma");
     if (escola) a.escolaId = escola.value;
-    if (disciplina) a.disciplinaId = disciplina.value;
     if (turma) a.turmaId = turma.value;
+    if (disciplina && disciplina.value !== (provaEmTela || "")) definirDisciplina(disciplina.value);
     if ($("crEscola")) $("crEscola").value = a.escolaId || "";
     if ($("crDisciplina")) $("crDisciplina").value = a.disciplinaId || "";
     if ($("crTurma")) $("crTurma").value = a.turmaId || "";
@@ -1095,6 +1202,9 @@
     salvar();
     anoAtual = ano;
     editIndex = -1;
+    provaEmTela = atual().disciplinaId || "";
+    carregarProva(atual(), provaEmTela);
+    gabaritoDomDaProva = "";
     pintar();
     if (permanecerLancamento) mostrarAplicacao(true);
     else mostrarBanco();
@@ -1314,8 +1424,17 @@
       return;
     }
     const a = atual();
-    if (a.students.length && n !== a.questions.length) {
-      const segue = confirm("O número de questões mudou. As respostas já lançadas serão ajustadas a esse tamanho. Continuar?");
+    if (!a.disciplinaId) {
+      alert("Escolha a disciplina. O número de questões fica só nela.");
+      $("crDisciplina").focus();
+      return;
+    }
+    const daProva = (s) => {
+      if (s && s.disciplinaId) return s.disciplinaId === a.disciplinaId;
+      return a.disciplinaId && a.disciplinaId === (a.gabaritoLegadoEm || idPortuguesDe(pack.disciplinas));
+    };
+    if (a.students.some(daProva) && n !== a.questions.length) {
+      const segue = confirm("O número de questões mudou. As respostas já lançadas desta disciplina serão ajustadas a esse tamanho. Continuar?");
       if (!segue) {
         $("crNQuest").value = a.questions.length || a.nQuestoes;
         return;
@@ -1325,7 +1444,9 @@
     while (qs.length < n) qs.push({ type: "4", correct: "1" });
     a.questions = qs;
     a.nQuestoes = n;
+    gravarProva(a, provaEmTela || a.disciplinaId);
     a.students.forEach((s) => {
+      if (!daProva(s)) return;
       const resp = (s.answers || []).slice(0, n);
       while (resp.length < n) resp.push("-");
       s.answers = resp;
@@ -1533,7 +1654,7 @@
   function sincronizarAbrirNoAno(origem) {
     const a = atual();
     if (origem === "escola" && $("crAbrirEscola")) a.escolaId = $("crAbrirEscola").value;
-    if (origem === "disciplina" && $("crAbrirDisciplina")) a.disciplinaId = $("crAbrirDisciplina").value;
+    if (origem === "disciplina" && $("crAbrirDisciplina")) definirDisciplina($("crAbrirDisciplina").value);
     if (origem === "turma" && $("crAbrirTurma")) a.turmaId = $("crAbrirTurma").value;
     if ($("crAbrirAluno")) $("crAbrirAluno").value = "";
     if (origem === "escola") pintarTurmas();
@@ -1541,7 +1662,8 @@
     if ($("crDisciplina")) $("crDisciplina").value = a.disciplinaId || "";
     if ($("crTurma")) $("crTurma").value = a.turmaId || "";
     salvar();
-    pintarAbrir();
+    if (origem === "disciplina") atualizarTelaDaProva();
+    else pintarAbrir();
   }
 
   function salvarAlteracaoResultado() {
@@ -1909,6 +2031,7 @@
     iniciado = true;
     soltarRotulosGlobais();
     pack = carregar();
+    provaEmTela = atual().disciplinaId || "";
     completarCadastro();
     prepararVoz();
     $("crAddEscola").addEventListener("click", adicionarEscola);
@@ -1959,9 +2082,8 @@
       refrescarFechamentoNaTela();
     });
     $("crDisciplina").addEventListener("change", () => {
-      gravarFormulario();
-      pintarGabarito();
-      gravarFormulario();
+      definirDisciplina($("crDisciplina").value);
+      atualizarTelaDaProva();
       salvar();
       espelharContextoNoLancamento();
       refrescarFechamentoNaTela();
@@ -2025,11 +2147,10 @@
       refrescarFechamentoNaTela();
     });
     $("crLancDisciplina").addEventListener("change", () => {
-      sincronizarLancamentoParaAno();
-      gravarFormulario();
-      pintarGabarito();
-      gravarFormulario();
+      definirDisciplina($("crLancDisciplina").value);
+      atualizarTelaDaProva();
       salvar();
+      espelharContextoNoLancamento();
       refrescarFechamentoNaTela();
     });
     $("crLancTurma").addEventListener("change", () => {
@@ -2093,7 +2214,7 @@
     else mostrarBanco();
   }
 
-  window.CORRETOR_VER = "eixo5";
+  window.CORRETOR_VER = "eixo6";
   window.corretorIrPara = function corretorIrPara(realizar) {
     iniciar();
     if (realizar) mostrarAplicacao();
