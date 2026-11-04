@@ -6034,7 +6034,8 @@ if (!DATA) {
     btn.addEventListener("click", () => goto(btn.dataset.page));
   });
   function abrirCorretorJanela(ev, realizar) {
-    const url = realizar ? "corretor.html?realizar=1" : "corretor.html";
+    const versao = "eixo5";
+    const url = realizar ? "corretor.html?realizar=1&v=" + versao : "corretor.html?v=" + versao;
     let janela = null;
     let reaproveitou = false;
     try {
@@ -6044,11 +6045,12 @@ if (!DATA) {
     }
     if (janela && !janela.closed) {
       try {
-        if (typeof janela.corretorIrPara === "function") {
+        const mesmaVersao = janela.CORRETOR_VER === versao;
+        if (mesmaVersao && typeof janela.corretorIrPara === "function") {
           janela.corretorIrPara(!!realizar);
           janela.focus();
           reaproveitou = true;
-        } else if (janela.location && janela.location.href && !/^about:blank/i.test(String(janela.location.href))) {
+        } else if (janela.location && !/^about:blank/i.test(String(janela.location.href || ""))) {
           janela.location.href = url;
           janela.focus();
           reaproveitou = true;

@@ -2093,6 +2093,7 @@
     else mostrarBanco();
   }
 
+  window.CORRETOR_VER = "eixo5";
   window.corretorIrPara = function corretorIrPara(realizar) {
     iniciar();
     if (realizar) mostrarAplicacao();
