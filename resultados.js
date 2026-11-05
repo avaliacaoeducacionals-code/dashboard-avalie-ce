@@ -147,8 +147,8 @@
 
   async function garantirNominal() {
     if (nominalPronto && Array.isArray(window.CORRETOR_NOMINAL)) return;
-    await carregarScript("dados_rede.js?v=eixo25");
-    await carregarScript("dados_nominal.js?v=eixo25");
+    await carregarScript("dados_rede.js?v=eixo26");
+    await carregarScript("dados_nominal.js?v=eixo26");
     nominalPronto = Array.isArray(window.CORRETOR_NOMINAL);
   }
 
@@ -371,7 +371,32 @@
           <div class="res-kpi"><span>Média</span><strong>${fmt(media)}</strong></div>
           <div class="res-kpi"><span>Nível</span><strong>${media == null ? "—" : esc(nivelDe(media, escalas))}</strong></div>
         </div>
+        ${htmlRespostas(qs, alunos)}
       </section>
+    `;
+  }
+
+  function htmlRespostas(qs, alunos) {
+    const lista = [...alunos].sort((a, b) => (a.name || "").localeCompare(b.name || "", "pt-BR"));
+    if (!lista.length || !qs.length) return "";
+    const head = `<tr><th>Aluno</th>${qs.map((_, i) => `<th>Q${i + 1}</th>`).join("")}</tr>`;
+    const body = lista.map((aluno) => {
+      const nome = esc(aluno.name || "");
+      const sit = situacao(aluno);
+      if (sit) return `<tr><td>${nome}</td><td colspan="${qs.length}">${esc(sit)}</td></tr>`;
+      const cols = qs.map((q, i) => {
+        const resp = (aluno.answers || [])[i];
+        const vazio = resp == null || resp === "" || resp === "-";
+        if (vazio) return `<td>—</td>`;
+        const texto = esc(String(resp));
+        const certa = String(resp) === String(q.correct);
+        return `<td class="${certa ? "res-certa" : "res-errada"}">${texto}</td>`;
+      }).join("");
+      return `<tr><td>${nome}</td>${cols}</tr>`;
+    }).join("");
+    return `
+      <h4>Respostas dos alunos</h4>
+      <div class="table-wrap res-respostas"><table class="res-tabela"><thead>${head}</thead><tbody>${body}</tbody></table></div>
     `;
   }
 

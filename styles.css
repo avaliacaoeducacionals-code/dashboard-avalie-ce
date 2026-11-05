@@ -2331,4 +2331,9 @@ html.realizar-ok #realizarSair { display: inline-flex; }
 .res-tabela { width: 100%; border-collapse: collapse; }
 .res-tabela th, .res-tabela td { border-bottom: 1px solid #e4eee8; padding: 6px 8px; text-align: left; }
 .res-tabela th { font-size: 13px; }
+.res-respostas { overflow-x: auto; }
+.res-respostas th, .res-respostas td { text-align: center; white-space: nowrap; }
+.res-respostas td:first-child, .res-respostas th:first-child { text-align: left; }
+.res-certa { color: #0f6b4c; font-weight: 700; }
+.res-errada { color: #b42318; font-weight: 700; }
 #resGerar:disabled { opacity: 0.55; cursor: not-allowed; }
