@@ -147,8 +147,8 @@
 
   async function garantirNominal() {
     if (nominalPronto && Array.isArray(window.CORRETOR_NOMINAL)) return;
-    await carregarScript("dados_rede.js?v=eixo24");
-    await carregarScript("dados_nominal.js?v=eixo24");
+    await carregarScript("dados_rede.js?v=eixo25");
+    await carregarScript("dados_nominal.js?v=eixo25");
     nominalPronto = Array.isArray(window.CORRETOR_NOMINAL);
   }
 

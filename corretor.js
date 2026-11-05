@@ -2682,7 +2682,7 @@
     }
   }
 
-  window.CORRETOR_VER = "eixo24";
+  window.CORRETOR_VER = "eixo25";
   window.corretorIrPara = function corretorIrPara(realizar) {
     if (realizar) {
       try {
