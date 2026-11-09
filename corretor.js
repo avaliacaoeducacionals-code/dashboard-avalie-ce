@@ -22,6 +22,7 @@
   let provaEmTela = "";
   let gabaritoDomDaProva = "";
   let acessoRealizar = null;
+  let nomeEmTela = "";
 
   function soltarRotulosGlobais() {
     try {
@@ -101,6 +102,7 @@
         if (salvo && typeof salvo === "object") base.anos[a] = { ...anoVazio(), ...salvo };
         garantirProvas(base.anos[a], base.disciplinas);
         carregarProva(base.anos[a], base.anos[a].disciplinaId || "");
+        alinharAnoComCadastro(base.anos[a]);
       });
       base.fechamentos = {};
       if (data.fechamentos && typeof data.fechamentos === "object" && !Array.isArray(data.fechamentos)) {
@@ -813,13 +815,91 @@
     });
   }
 
-  function gravarFormulario() {
+  function lerAvaliacoesCadastradas() {
+    try {
+      const bruto = JSON.parse(localStorage.getItem("avalie-cadastro-avaliacoes") || "[]");
+      if (!Array.isArray(bruto)) return [];
+      const nomes = [];
+      const vistos = new Set();
+      bruto.forEach((item) => {
+        const nome = String(item && item.nome || "").trim();
+        const chave = nome.toLocaleLowerCase("pt-BR");
+        if (!nome || vistos.has(chave)) return;
+        vistos.add(chave);
+        nomes.push(nome);
+      });
+      return nomes;
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function clonarLancamento(ano) {
+    const base = anoVazio();
+    return {
+      escolaId: ano.escolaId || "",
+      disciplinaId: ano.disciplinaId || "",
+      turmaId: ano.turmaId || "",
+      data: ano.data || "",
+      matriculados: ano.matriculados ?? "",
+      nQuestoes: ano.nQuestoes || base.nQuestoes,
+      escalas: JSON.parse(JSON.stringify(ano.escalas && ano.escalas.length ? ano.escalas : base.escalas)),
+      questions: JSON.parse(JSON.stringify(Array.isArray(ano.questions) ? ano.questions : [])),
+      students: JSON.parse(JSON.stringify(Array.isArray(ano.students) ? ano.students : [])),
+      provas: JSON.parse(JSON.stringify(ano.provas && typeof ano.provas === "object" ? ano.provas : {})),
+      gabaritoLegadoEm: ano.gabaritoLegadoEm || "",
+    };
+  }
+
+  function aplicarLancamento(ano, dados) {
+    const base = dados || anoVazio();
+    ano.escolaId = base.escolaId || "";
+    ano.disciplinaId = base.disciplinaId || "";
+    ano.turmaId = base.turmaId || "";
+    ano.data = base.data || "";
+    ano.matriculados = base.matriculados ?? "";
+    ano.nQuestoes = base.nQuestoes || 10;
+    ano.escalas = JSON.parse(JSON.stringify(base.escalas && base.escalas.length ? base.escalas : anoVazio().escalas));
+    ano.questions = JSON.parse(JSON.stringify(Array.isArray(base.questions) ? base.questions : []));
+    ano.students = JSON.parse(JSON.stringify(Array.isArray(base.students) ? base.students : []));
+    ano.provas = JSON.parse(JSON.stringify(base.provas && typeof base.provas === "object" ? base.provas : {}));
+    ano.gabaritoLegadoEm = base.gabaritoLegadoEm || "";
+  }
+
+  function garantirMapaAvaliacoes(ano) {
+    if (!ano.porAvaliacao || typeof ano.porAvaliacao !== "object" || Array.isArray(ano.porAvaliacao)) ano.porAvaliacao = {};
+    return ano.porAvaliacao;
+  }
+
+  function alinharAnoComCadastro(ano) {
+    const mapa = garantirMapaAvaliacoes(ano);
+    const nome = String(ano.nome || "").trim();
+    if (nome && !mapa[nome]) mapa[nome] = clonarLancamento(ano);
+    if (nome && lerAvaliacoesCadastradas().includes(nome)) {
+      aplicarLancamento(ano, mapa[nome]);
+      ano.nome = nome;
+      carregarProva(ano, ano.disciplinaId || "");
+      return;
+    }
+    if (nome) {
+      aplicarLancamento(ano, null);
+      ano.nome = "";
+      carregarProva(ano, "");
+    }
+  }
+
+  function guardarAvaliacaoEmTela() {
+    const ano = atual();
+    if (!nomeEmTela) return;
+    garantirMapaAvaliacoes(ano)[nomeEmTela] = clonarLancamento(ano);
+  }
+
+  function lerFormularioNoAno() {
     const a = atual();
     const escola = $("crEscola");
     if (escola) a.escolaId = escola.value;
     const turma = $("crTurma");
     if (turma) a.turmaId = turma.value;
-    if ($("crNome")) a.nome = $("crNome").value.trim();
     if ($("crData")) a.data = $("crData").value;
     if ($("crMatriculados")) a.matriculados = $("crMatriculados").value;
     if (document.querySelector("#crEscalas .corretor-escala")) a.escalas = lerEscalas();
@@ -834,6 +914,13 @@
       if (document.querySelector("#crGabarito .corretor-q")) a.questions = lerQuestoesDoDom();
       gravarProva(a, provaEmTela);
     }
+  }
+  function gravarFormulario() {
+    lerFormularioNoAno();
+    const a = atual();
+    if ($("crNome")) a.nome = $("crNome").value.trim();
+    nomeEmTela = a.nome || "";
+    if (a.nome) garantirMapaAvaliacoes(a)[a.nome] = clonarLancamento(a);
   }
 
   function nivelDe(p) {
@@ -965,9 +1052,55 @@
     atual().turmaId = sel.value;
   }
 
+  function pintarSelecaoAvaliacao() {
+    const sel = $("crNome");
+    const aviso = $("crNomeAviso");
+    if (!sel) return;
+    const nomes = lerAvaliacoesCadastradas();
+    const atualNome = String(atual().nome || "").trim();
+    const escolhido = nomes.includes(atualNome) ? atualNome : "";
+    if (!nomes.length) {
+      sel.innerHTML = `<option value="">Nenhuma avaliação cadastrada</option>`;
+      sel.value = "";
+      sel.disabled = true;
+      if (aviso) {
+        aviso.hidden = false;
+        aviso.textContent = "Cadastre uma avaliação no Banco antes de escolher o nome.";
+      }
+      return;
+    }
+    sel.disabled = false;
+    sel.innerHTML = `<option value="">Selecione a avaliação</option>` + nomes.map((nome) => (
+      `<option value="${esc(nome)}">${esc(nome)}</option>`
+    )).join("");
+    sel.value = escolhido;
+    if (aviso) aviso.hidden = true;
+  }
+
+  function aoEscolherAvaliacao() {
+    const ano = atual();
+    const novo = $("crNome") ? $("crNome").value : "";
+    if (nomeEmTela && nomeEmTela !== novo) {
+      lerFormularioNoAno();
+      garantirMapaAvaliacoes(ano)[nomeEmTela] = clonarLancamento(ano);
+    }
+    const mapa = garantirMapaAvaliacoes(ano);
+    if (novo && mapa[novo]) aplicarLancamento(ano, mapa[novo]);
+    else aplicarLancamento(ano, null);
+    ano.nome = novo;
+    nomeEmTela = novo;
+    if (novo) mapa[novo] = clonarLancamento(ano);
+    provaEmTela = ano.disciplinaId || "";
+    carregarProva(ano, provaEmTela);
+    gabaritoDomDaProva = "";
+    pintar();
+    salvar();
+  }
+
   function pintarCampos() {
     const a = atual();
-    $("crNome").value = a.nome || "";
+    pintarSelecaoAvaliacao();
+    nomeEmTela = String(a.nome || "").trim();
     $("crData").value = a.data || "";
     $("crMatriculados").value = a.matriculados || "";
     $("crNQuest").value = a.nQuestoes || a.questions.length || 10;
@@ -2586,6 +2719,7 @@
     gravarLiberacao(flags);
     if (campo) campo.value = "";
     pintarAvaliacoes();
+    if ($("crNome")) pintarSelecaoAvaliacao();
   }
 
   function iniciar() {
@@ -2608,6 +2742,7 @@
     soltarRotulosGlobais();
     pack = carregar();
     provaEmTela = atual().disciplinaId || "";
+    nomeEmTela = String(atual().nome || "").trim();
     completarCadastro();
     prepararVoz();
     const addAvaliacao = $("crAddAvaliacao");
@@ -2680,9 +2815,10 @@
       pintarSelectAlunos();
       refrescarFechamentoNaTela();
     });
-    ["crNome", "crData", "crMatriculados", "crNQuest"].forEach((id) => {
+    ["crData", "crMatriculados", "crNQuest"].forEach((id) => {
       $(id).addEventListener("change", () => { gravarFormulario(); salvar(); });
     });
+    if ($("crNome")) $("crNome").addEventListener("change", aoEscolherAvaliacao);
     $("crAddEscala").addEventListener("click", () => {
       gravarFormulario();
       atual().escalas.push({ nome: "", min: 0, max: 0 });
