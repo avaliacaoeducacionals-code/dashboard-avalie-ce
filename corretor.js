@@ -1218,7 +1218,6 @@
     pintarLancamentoContexto();
     pintarFinalizacao();
     pintarAbrir();
-    $("crResultados").hidden = true;
   }
 
   function querRealizar() {
@@ -1391,8 +1390,6 @@
     pintarAlunos();
     const aviso = $("crSemGabarito");
     if (aviso) aviso.hidden = a.questions.length > 0;
-    if (temRelatorioDaTurma()) gerarResultados(false);
-    else $("crResultados").hidden = true;
     pintarFinalizacao();
     marcarTela(true);
     const voltar = $("crVoltarBanco");
@@ -2891,8 +2888,6 @@
       if (ed) editarAluno(Number(ed.dataset.editAluno));
       if (del) excluirAluno(Number(del.dataset.delAluno));
     });
-    $("crGerar").addEventListener("click", () => gerarResultados(true));
-    $("crPdf").addEventListener("click", exportarPdf);
     $("crAluno").addEventListener("change", sincronizarSituacaoDoAluno);
     const boxSit = $("crSituacao");
     if (boxSit) {
