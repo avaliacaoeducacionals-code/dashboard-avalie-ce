@@ -1,8 +1,8 @@
 /* Login e hash SHA-256. A senha em texto nao entra no site. */
 window.ACESSO_ESCOLAS = [
   {
-    "login": "smepacajus",
-    "senhaHash": "e6f3e21dd9fa42316f7b41331fa4da16f6274910157e36e972be12c281aa1769",
+    "login": "EIXODEAVALIAÇÃO",
+    "senhaHash": "e8ed1897332a7f66dd0cd3a8e147699ab1ee7532591352b206fb1673b8e6e760",
     "mestre": true
   },
   {
@@ -156,3 +156,40 @@ window.ACESSO_ESCOLAS = [
     "escola": "EMTI Senador Carlos Jereissati"
   }
 ];
+
+/* A chave mestra, depois de conferida, abre Eixo, Resultados e Realizar a avaliação. */
+(function () {
+  const CHAVES = ["avalie-mestre", "avalie-eixo-mestre", "avalie-resultados", "avalie-realizar"];
+
+  function itemMestre(login) {
+    const chave = String(login || "").trim().toLowerCase();
+    if (!chave || !Array.isArray(window.ACESSO_ESCOLAS)) return null;
+    const item = window.ACESSO_ESCOLAS.find((entrada) => String(entrada.login || "").toLowerCase() === chave);
+    return item && item.mestre ? item : null;
+  }
+
+  window.gravarSessaoMestre = function (login) {
+    const item = itemMestre(login);
+    if (!item) return;
+    const gravada = JSON.stringify({ login: item.login, mestre: true });
+    CHAVES.forEach((chave) => {
+      try { sessionStorage.setItem(chave, gravada); } catch (e) { /* sessão deste navegador */ }
+    });
+  };
+
+  window.lerSessaoMestre = function () {
+    try {
+      const bruto = JSON.parse(sessionStorage.getItem("avalie-mestre") || "null");
+      const item = itemMestre(bruto && bruto.login);
+      return item ? { login: item.login, mestre: true } : null;
+    } catch (e) {
+      return null;
+    }
+  };
+
+  window.sairSessaoMestre = function () {
+    CHAVES.forEach((chave) => {
+      try { sessionStorage.removeItem(chave); } catch (e) { /* volta ao login */ }
+    });
+  };
+})();

@@ -345,6 +345,8 @@ html:not([data-tema="dia"]) select option { color: #e8f2f6; background-color: #1
   padding: 8px 0; border-bottom: 1px solid var(--line, rgba(255,255,255,.12));
 }
 .corretor-escolas button { padding: 6px 10px; }
+.corretor-escolas li span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.corretor-escolas li small { font-weight: 700; }
 .corretor-q select, .corretor-grid input, .corretor-grid select, .corretor-card > label input, .corretor-escola-add input, .corretor-escala input {
   width: 100%;
   box-sizing: border-box;
@@ -2309,6 +2311,22 @@ html.realizar-ok #realizarSair { display: inline-flex; }
 }
 .res-card input:focus-visible, .res-card select:focus-visible { outline: 3px solid #142018; outline-offset: 2px; }
 .res-erro { min-height: 1.2em; margin: 8px 0; color: #9d1c1c; font-weight: 700; }
+.eixo-login {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  margin-top: 10px;
+  box-sizing: border-box;
+}
+.eixo-login[hidden] { display: none !important; }
+.eixo-login p { margin: 0; }
+.eixo-login input { width: 100%; box-sizing: border-box; }
+.eixo-login .capa-btn { align-self: flex-start; }
+.eixo-sai { margin: 8px 0 12px; }
+#eixoBanco[hidden], #eixoCartoes[hidden], .eixo-senhas[hidden] { display: none !important; }
+.eixo-senhas { margin-top: 8px; max-height: 70vh; overflow: auto; }
+#eixoSenhasLista p { margin: 0 0 8px; overflow-wrap: anywhere; }
 .res-topo, .res-acoes { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .res-grade {
   display: grid;
@@ -2325,6 +2343,7 @@ html.realizar-ok #realizarSair { display: inline-flex; }
 .res-kpi span { display: block; font-size: 12px; font-weight: 700; color: #4d6a78; }
 .res-kpi strong { font-size: 18px; }
 .res-aviso { color: #4d6a78; }
+#resConsulta .res-grade[hidden], #resGerar[hidden], #resLiberacao[hidden] { display: none !important; }
 .res-tabela { width: 100%; border-collapse: collapse; }
 .res-tabela th, .res-tabela td { border-bottom: 1px solid #e4eee8; padding: 6px 8px; text-align: left; }
 .res-tabela th { font-size: 13px; }

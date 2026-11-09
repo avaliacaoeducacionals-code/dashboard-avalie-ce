@@ -1,4 +1,20 @@
 # A lista nominal (dados_nominal.js) faz parte do site.
 # Senhas das escolas: só neste computador. Não publicar.
 acessos-escolas.xlsx
+senhas-locais.js
 ~$*
+
+# Planilhas de origem e a cópia de trabalho do dashboard.
+# Ficam nesta pasta para o processamento, e fora do GitHub Pages.
+/1 AVALIE.CE*/
+/2º ANO*/
+/4º ANO*/
+/5º ANO/
+/avalie.ce 2026/
+/diagnostica/
+/FUND II*/
+/PROTOCOLO DE ACOMPANHAMENTO/
+/spaece 2025/
+/dashboard/dados*.js
+/dashboard/__pycache__/
+/dashboard/_tmp*

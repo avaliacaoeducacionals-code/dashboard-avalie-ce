@@ -20,7 +20,7 @@
     html:not(.realizar-login) #realizarLogin,
     html.realizar-ok #realizarLogin { display: none !important; }
   </style>
-  <link rel="stylesheet" href="styles.css?v=eixo26" />
+  <link rel="stylesheet" href="styles.css?v=eixo32" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
 <body class="corretor-solo">
@@ -61,6 +61,16 @@
     </header>
 
     <div id="crBanco">
+    <article class="card corretor-card" id="crCadastroAvaliacao">
+      <h2>Cadastro de avaliação</h2>
+      <p class="hint">Registre o nome da avaliação que será aplicada. A lista fica neste navegador.</p>
+      <div class="corretor-escola-add">
+        <input id="crNovaAvaliacao" type="text" maxlength="120" placeholder="Nome da avaliação" aria-label="Nome da avaliação para cadastrar" />
+        <button type="button" id="crAddAvaliacao" class="btn-compare">Cadastrar</button>
+      </div>
+      <p id="crAvaliacaoErro" class="realizar-erro" role="alert" aria-live="polite"></p>
+      <ul id="crAvaliacoesLista" class="corretor-escolas" aria-label="Avaliações cadastradas"></ul>
+    </article>
     <article class="card corretor-card corretor-abrir" id="crAbrirBox">
       <h2>Abrir o resultado</h2>
       <p class="hint">Aqui é o único lugar para alterar um resultado já salvo. Escolha a escola, o ano, a disciplina, a turma e o aluno. Português e Matemática não se misturam. Se o lançamento da turma estiver finalizado, o resultado continua bloqueado.</p>
@@ -276,7 +286,7 @@
   <script src="habilidades.js?v=descritores1"></script>
   <script src="dados_rede.js?v=rede1"></script>
   <script src="dados_nominal.js?v=nomes1"></script>
-  <script src="acesso.js?v=eixo26"></script>
-  <script src="corretor.js?v=eixo26"></script>
+  <script src="acesso.js?v=eixo30"></script>
+  <script src="corretor.js?v=eixo32"></script>
 </body>
 </html>

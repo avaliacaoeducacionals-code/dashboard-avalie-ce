@@ -10,7 +10,7 @@
   <script>
     document.documentElement.dataset.tema = localStorage.getItem("avalie-tema") === "dia" ? "dia" : "noite";
   </script>
-  <link rel="stylesheet" href="styles.css?v=eixo28" />
+  <link rel="stylesheet" href="styles.css?v=eixo32" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
 <body class="capa-ativa">
@@ -36,7 +36,7 @@
         <div class="capa-cinco">
           <button type="button" class="capa-card" data-capa-grupo="capaGrupoEixo">
             <strong>Eixo de avaliação</strong>
-            <span>Banco da avaliação, do 1º ao 9º ano.</span>
+            <span>Banco da avaliação, com a chave mestra.</span>
             <span class="capa-btn">Abrir</span>
           </button>
           <a class="capa-card" id="abrirRealizarCapa" href="corretor.html?realizar=1&amp;v=eixo26" target="avalieCorretor">
@@ -55,12 +55,40 @@
       <div class="capa-palco capa-grupo" id="capaGrupoEixo" hidden>
         <button type="button" class="capa-voltar" data-capa-voltar="capaCinco">Voltar</button>
         <p class="capa-secretaria">Eixo de avaliação</p>
-        <div class="capa-cinco">
-          <a class="capa-card" id="abrirCorretorCapa" href="corretor.html?v=eixo26" target="avalieCorretor">
-            <strong>Banco da avaliação</strong>
-            <span>Abre o corretor, do 1º ao 9º ano.</span>
-            <span class="capa-btn">Abrir</span>
-          </a>
+        <form id="eixoLogin" class="res-card eixo-login" autocomplete="on" novalidate>
+          <h2>Eixo de avaliação</h2>
+          <p>Informe o login e a senha da chave mestra.</p>
+          <label>Login
+            <input id="eixoLoginCampo" name="username" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" />
+          </label>
+          <label>Senha
+            <input id="eixoSenhaCampo" name="password" type="password" autocomplete="current-password" />
+          </label>
+          <p id="eixoErro" class="res-erro" role="alert" aria-live="polite"></p>
+          <button type="submit" class="capa-btn">Entrar</button>
+        </form>
+        <div id="eixoBanco" hidden>
+          <div class="eixo-sai">
+            <button type="button" id="eixoSair" class="capa-btn">Sair</button>
+          </div>
+          <div class="capa-cinco" id="eixoCartoes">
+            <a class="capa-card" id="abrirCorretorCapa" href="corretor.html?v=eixo30" target="avalieCorretor">
+              <strong>Banco da avaliação</strong>
+              <span>Abre o corretor, do 1º ao 9º ano.</span>
+              <span class="capa-btn">Abrir</span>
+            </a>
+            <button type="button" class="capa-card" id="eixoAbrirSenhas">
+              <strong>Consultar senhas</strong>
+              <span>Login e senha de cada escola.</span>
+              <span class="capa-btn">Abrir</span>
+            </button>
+          </div>
+          <div id="eixoSenhas" class="res-card eixo-senhas" hidden>
+            <h2>Senhas das escolas</h2>
+            <p id="eixoSenhasAviso"></p>
+            <div id="eixoSenhasLista"></div>
+            <button type="button" id="eixoSenhasVoltar" class="capa-btn">Voltar</button>
+          </div>
         </div>
       </div>
 
@@ -185,6 +213,7 @@
                 <select id="resTurma" aria-label="Turma do relatório"></select>
               </label>
             </div>
+            <p id="resLiberacao" class="res-aviso" hidden>O resultado ainda não foi liberado. A avaliação continua em lançamento.</p>
             <button type="button" id="resGerar" class="capa-btn">Gerar relatório</button>
             <div id="resRelatorio" class="res-relatorio"></div>
           </div>
@@ -1327,8 +1356,9 @@
   <script src="dados_consulta_aval_2ano.js"></script>
   <script src="dados_consulta_aval_5ano.js"></script>
   <script src="habilidades.js"></script>
-  <script src="acesso.js?v=eixo26"></script>
+  <script src="acesso.js?v=eixo30"></script>
+  <script src="eixo-login.js?v=eixo31"></script>
   <script src="app.js?v=eixo26"></script>
-  <script src="resultados.js?v=eixo26"></script>
+  <script src="resultados.js?v=eixo32"></script>
 </body>
 </html>

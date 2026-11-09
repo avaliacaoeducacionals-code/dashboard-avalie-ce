@@ -213,6 +213,39 @@
     sel.value = lista.includes(antes) ? antes : "";
   }
 
+  function avaliacoesCadastradas() {
+    try {
+      const bruto = JSON.parse(localStorage.getItem("avalie-cadastro-avaliacoes") || "[]");
+      if (!Array.isArray(bruto)) return [];
+      return bruto.map((item) => String(item && item.nome || "").trim()).filter(Boolean);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function resultadoPodeAparecer() {
+    const nomes = [...new Set(avaliacoesCadastradas())];
+    if (!nomes.length) return true;
+    let flags = {};
+    try {
+      const bruto = JSON.parse(localStorage.getItem("avalie-resultado-liberacao") || "{}");
+      if (bruto && typeof bruto === "object" && !Array.isArray(bruto)) flags = bruto;
+    } catch (e) { /* ainda em lançamento */ }
+    return nomes.every((nome) => flags[nome] === true);
+  }
+
+  function aplicarLiberacao() {
+    const liberado = resultadoPodeAparecer();
+    const aviso = $("resLiberacao");
+    const grade = document.querySelector("#resConsulta .res-grade");
+    const gerar = $("resGerar");
+    if (aviso) aviso.hidden = liberado;
+    if (grade) grade.hidden = !liberado;
+    if (gerar) gerar.hidden = !liberado;
+    if (!liberado && $("resRelatorio")) $("resRelatorio").innerHTML = "";
+    return liberado;
+  }
+
   function atualizarBotao() {
     const btn = $("resGerar");
     if (!btn) return;
@@ -238,6 +271,7 @@
         fixa.textContent = sessao.escola || "";
       }
     }
+    if (!aplicarLiberacao()) return;
     const rel = $("resRelatorio");
     if (rel) rel.innerHTML = `<p class="res-aviso">Carregando as turmas da escola.</p>`;
     try {
@@ -429,6 +463,7 @@
   }
 
   function gerarRelatorio() {
+    if (!aplicarLiberacao()) return;
     const escola = escolaEscolhida();
     const ano = $("resAno") ? $("resAno").value : "";
     const turma = $("resTurma") ? $("resTurma").value : "";
@@ -486,7 +521,8 @@
       const gravada = item.mestre
         ? { login: item.login, mestre: true }
         : { login: item.login, escola: item.escola };
-      sessionStorage.setItem(CHAVE_SESSAO, JSON.stringify(gravada));
+      if (item.mestre && window.gravarSessaoMestre) window.gravarSessaoMestre(item.login);
+      else sessionStorage.setItem(CHAVE_SESSAO, JSON.stringify(gravada));
       if (senhaEl) senhaEl.value = "";
       sessao = gravada;
       await mostrarConsulta();
@@ -496,7 +532,10 @@
   }
 
   function sair() {
-    try { sessionStorage.removeItem(CHAVE_SESSAO); } catch (e) { /* volta ao login */ }
+    if (sessao && sessao.mestre && window.sairSessaoMestre) window.sairSessaoMestre();
+    else {
+      try { sessionStorage.removeItem(CHAVE_SESSAO); } catch (e) { /* volta ao login */ }
+    }
     if ($("resSenhaCampo")) $("resSenhaCampo").value = "";
     if ($("resLoginCampo")) $("resLoginCampo").value = "";
     if ($("resErro")) $("resErro").textContent = "";
@@ -539,6 +578,10 @@
     else mostrarLogin();
   }
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ligar);
-  else ligar();
+    window.addEventListener("storage", (ev) => {
+      if (ev.key && ev.key !== "avalie-resultado-liberacao" && ev.key !== "avalie-cadastro-avaliacoes") return;
+      if (lerSessao()) mostrarConsulta();
+    });
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ligar);
+    else ligar();
 })();

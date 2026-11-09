@@ -2446,7 +2446,8 @@
       const sessao = item.mestre
         ? { login: item.login, mestre: true }
         : { login: item.login, escola: item.escola };
-      sessionStorage.setItem("avalie-realizar", JSON.stringify(sessao));
+      if (item.mestre && window.gravarSessaoMestre) window.gravarSessaoMestre(item.login);
+      else sessionStorage.setItem("avalie-realizar", JSON.stringify(sessao));
       if (senhaEl) senhaEl.value = "";
       acessoRealizar = sessao;
       if (!iniciado) iniciar();
@@ -2457,7 +2458,10 @@
   }
 
   function sairRealizar() {
-    try { sessionStorage.removeItem("avalie-realizar"); } catch (e) { /* volta ao login */ }
+    if (acessoRealizar && acessoRealizar.mestre && window.sairSessaoMestre) window.sairSessaoMestre();
+    else {
+      try { sessionStorage.removeItem("avalie-realizar"); } catch (e) { /* volta ao login */ }
+    }
     const senhaEl = $("realizarSenhaCampo");
     const loginEl = $("realizarLoginCampo");
     if (senhaEl) senhaEl.value = "";
@@ -2468,6 +2472,120 @@
       history.replaceState(null, "", u.pathname + u.search + u.hash);
     } catch (e) { /* permanece nesta janela */ }
     mostrarTelaLogin();
+  }
+
+  const CHAVE_AVALIACOES = "avalie-cadastro-avaliacoes";
+  const CHAVE_LIBERACAO = "avalie-resultado-liberacao";
+
+  function lerAvaliacoes() {
+    try {
+      const bruto = JSON.parse(localStorage.getItem(CHAVE_AVALIACOES) || "[]");
+      if (!Array.isArray(bruto)) return [];
+      return bruto
+        .map((item) => String(item && item.nome || "").trim())
+        .filter(Boolean);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function gravarAvaliacoes(lista) {
+    const gravada = lista.map((nome) => ({ nome }));
+    localStorage.setItem(CHAVE_AVALIACOES, JSON.stringify(gravada));
+  }
+
+  function lerLiberacao() {
+    try {
+      const bruto = JSON.parse(localStorage.getItem(CHAVE_LIBERACAO) || "{}");
+      return bruto && typeof bruto === "object" && !Array.isArray(bruto) ? bruto : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function gravarLiberacao(mapa) {
+    const limpo = {};
+    Object.keys(mapa || {}).forEach((nome) => {
+      const chave = String(nome || "").trim();
+      if (chave) limpo[chave] = mapa[nome] === true;
+    });
+    localStorage.setItem(CHAVE_LIBERACAO, JSON.stringify(limpo));
+  }
+
+  function sessaoMestraAberta() {
+    if (window.lerSessaoMestre && window.lerSessaoMestre()) return true;
+    try {
+      const pai = window.opener;
+      if (pai && !pai.closed && pai.lerSessaoMestre && pai.lerSessaoMestre()) return true;
+    } catch (e) { /* a capa pode estar em outra janela */ }
+    return false;
+  }
+
+  function pintarAvaliacoes() {
+    const listaEl = $("crAvaliacoesLista");
+    if (!listaEl) return;
+    const lista = lerAvaliacoes();
+    const flags = lerLiberacao();
+    listaEl.replaceChildren();
+    if (!lista.length) {
+      const vazio = document.createElement("li");
+      vazio.textContent = "Nenhuma avaliação cadastrada.";
+      listaEl.appendChild(vazio);
+      return;
+    }
+    lista.forEach((nome) => {
+      const item = document.createElement("li");
+      const texto = document.createElement("span");
+      const titulo = document.createElement("strong");
+      titulo.textContent = nome;
+      const estado = document.createElement("small");
+      const liberado = flags[nome] === true;
+      estado.textContent = liberado ? "Resultado liberado" : "Em lançamento";
+      texto.append(titulo, estado);
+      item.appendChild(texto);
+      if (!liberado) {
+        const botao = document.createElement("button");
+        botao.type = "button";
+        botao.className = "btn-compare";
+        botao.textContent = "Liberar resultado";
+        botao.addEventListener("click", () => liberarResultado(nome));
+        item.appendChild(botao);
+      }
+      listaEl.appendChild(item);
+    });
+  }
+
+  function liberarResultado(nome) {
+    const erro = $("crAvaliacaoErro");
+    if (erro) erro.textContent = "";
+    if (!sessaoMestraAberta()) {
+      if (erro) erro.textContent = "Somente a chave mestra pode liberar o resultado.";
+      return;
+    }
+    const flags = lerLiberacao();
+    flags[nome] = true;
+    gravarLiberacao(flags);
+    pintarAvaliacoes();
+  }
+
+  function cadastrarAvaliacao() {
+    const campo = $("crNovaAvaliacao");
+    const erro = $("crAvaliacaoErro");
+    const nome = campo ? campo.value.trim() : "";
+    if (erro) erro.textContent = "";
+    if (!nome) {
+      if (erro) erro.textContent = "Informe o nome da avaliação.";
+      if (campo) campo.focus();
+      return;
+    }
+    const lista = lerAvaliacoes();
+    lista.push(nome);
+    gravarAvaliacoes(lista);
+    const flags = lerLiberacao();
+    if (flags[nome] !== true) flags[nome] = false;
+    gravarLiberacao(flags);
+    if (campo) campo.value = "";
+    pintarAvaliacoes();
   }
 
   function iniciar() {
@@ -2492,6 +2610,15 @@
     provaEmTela = atual().disciplinaId || "";
     completarCadastro();
     prepararVoz();
+    const addAvaliacao = $("crAddAvaliacao");
+    const novaAvaliacao = $("crNovaAvaliacao");
+    if (addAvaliacao) addAvaliacao.addEventListener("click", cadastrarAvaliacao);
+    if (novaAvaliacao) {
+      novaAvaliacao.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter") cadastrarAvaliacao();
+      });
+    }
+    pintarAvaliacoes();
     $("crAddEscola").addEventListener("click", adicionarEscola);
     $("crNovaEscola").addEventListener("keydown", (ev) => {
       if (ev.key === "Enter") adicionarEscola();
