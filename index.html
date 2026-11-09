@@ -10,7 +10,7 @@
   <script>
     document.documentElement.dataset.tema = localStorage.getItem("avalie-tema") === "dia" ? "dia" : "noite";
   </script>
-  <link rel="stylesheet" href="styles.css?v=eixo32" />
+  <link rel="stylesheet" href="styles.css?v=eixo34" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
 <body class="capa-ativa">
@@ -198,7 +198,7 @@
           </form>
           <div id="resConsulta" class="res-card" hidden>
             <div class="res-topo">
-              <h2>Consulta do relatório</h2>
+              <h2 id="resConsultaTitulo">Consulta do relatório</h2>
               <button type="button" id="resSair" class="capa-btn">Sair</button>
             </div>
             <p id="resEscolaFixa" class="res-escola-fixa" hidden></p>
@@ -206,15 +206,25 @@
               <label id="resEscolaBox">Escola
                 <select id="resEscola" aria-label="Escola do relatório"></select>
               </label>
-              <label>Ano
-                <select id="resAno" aria-label="Ano do relatório"></select>
+              <label>Série
+                <select id="resAno" aria-label="Série da avaliação"></select>
               </label>
               <label>Turma
-                <select id="resTurma" aria-label="Turma do relatório"></select>
+                <select id="resTurma" aria-label="Turma ou escola toda"></select>
+              </label>
+              <label>Disciplina
+                <select id="resDisciplina" aria-label="Disciplina do relatório">
+                  <option value="">Selecione a disciplina</option>
+                  <option value="Português">Português</option>
+                  <option value="Matemática">Matemática</option>
+                </select>
               </label>
             </div>
             <p id="resLiberacao" class="res-aviso" hidden>O resultado ainda não foi liberado. A avaliação continua em lançamento.</p>
-            <button type="button" id="resGerar" class="capa-btn">Gerar relatório</button>
+            <div class="res-acoes">
+              <button type="button" id="resGerar" class="capa-btn" disabled>Gerar relatório</button>
+              <button type="button" id="resImprimir" class="capa-btn" disabled>Imprimir</button>
+            </div>
             <div id="resRelatorio" class="res-relatorio"></div>
           </div>
         </div>
@@ -1359,6 +1369,6 @@
   <script src="acesso.js?v=eixo30"></script>
   <script src="eixo-login.js?v=eixo31"></script>
   <script src="app.js?v=eixo26"></script>
-  <script src="resultados.js?v=eixo32"></script>
+  <script src="resultados.js?v=eixo34"></script>
 </body>
 </html>

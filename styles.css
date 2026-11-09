@@ -2343,7 +2343,20 @@ html.realizar-ok #realizarSair { display: inline-flex; }
 .res-kpi span { display: block; font-size: 12px; font-weight: 700; color: #4d6a78; }
 .res-kpi strong { font-size: 18px; }
 .res-aviso { color: #4d6a78; }
-#resConsulta .res-grade[hidden], #resGerar[hidden], #resLiberacao[hidden] { display: none !important; }
+#resConsulta .res-grade[hidden], #resGerar[hidden], #resImprimir[hidden], #resLiberacao[hidden] { display: none !important; }
+@media print {
+  body.res-imprimindo .capa,
+  body.res-imprimindo .app { visibility: hidden; }
+  body.res-imprimindo #resRelatorio,
+  body.res-imprimindo #resRelatorio * { visibility: visible; }
+  body.res-imprimindo #resRelatorio {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+  }
+}
 .res-tabela { width: 100%; border-collapse: collapse; }
 .res-tabela th, .res-tabela td { border-bottom: 1px solid #e4eee8; padding: 6px 8px; text-align: left; }
 .res-tabela th { font-size: 13px; }

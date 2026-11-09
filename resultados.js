@@ -4,6 +4,7 @@
   const CHAVE_PACK = "avalie-corretor-v1";
   const CHAVE_SESSAO = "avalie-resultados";
   const SITUACOES = ["N.D", "Falta", "Transferência"];
+  const TURMA_TODA = "__escola__";
   const $ = (id) => document.getElementById(id);
   let sessao = null;
   let nominalPronto = false;
@@ -170,11 +171,10 @@
   function preencherAno() {
     const sel = $("resAno");
     if (!sel) return;
-    const antes = sel.value;
-    sel.innerHTML = `<option value="">Selecione o ano</option>` + ANOS.map((ano) => (
+    sel.innerHTML = `<option value="">Selecione a série</option>` + ANOS.map((ano) => (
       `<option value="${esc(ano)}">${esc(ano)} ano</option>`
     )).join("");
-    sel.value = ANOS.includes(antes) ? antes : "";
+    sel.value = "";
   }
 
   function preencherEscolas() {
@@ -207,10 +207,11 @@
     const escola = escolaEscolhida();
     const ano = $("resAno") ? $("resAno").value : "";
     const lista = escola && ano ? turmasDa(escola, ano) : [];
-    sel.innerHTML = `<option value="">Selecione a turma</option>` + lista.map((turma) => (
+    const toda = ano ? `<option value="${TURMA_TODA}">Escola toda</option>` : "";
+    sel.innerHTML = `<option value="">Selecione a turma</option>` + toda + lista.map((turma) => (
       `<option value="${esc(turma)}">${esc(turma)}</option>`
     )).join("");
-    sel.value = lista.includes(antes) ? antes : "";
+    sel.value = antes === TURMA_TODA || lista.includes(antes) ? antes : "";
   }
 
   function avaliacoesCadastradas() {
@@ -242,7 +243,9 @@
     if (aviso) aviso.hidden = liberado;
     if (grade) grade.hidden = !liberado;
     if (gerar) gerar.hidden = !liberado;
-    if (!liberado && $("resRelatorio")) $("resRelatorio").innerHTML = "";
+    const imprimir = $("resImprimir");
+    if (imprimir) imprimir.hidden = !liberado;
+    if (!liberado) limparRelatorio();
     return liberado;
   }
 
@@ -251,7 +254,27 @@
     if (!btn) return;
     const ano = $("resAno") && $("resAno").value;
     const turma = $("resTurma") && $("resTurma").value;
-    btn.disabled = !(escolaEscolhida() && ano && turma);
+    const disciplina = $("resDisciplina") && $("resDisciplina").value;
+    btn.disabled = !(escolaEscolhida() && ano && turma && disciplina);
+  }
+
+  function limparRelatorio() {
+    if ($("resRelatorio")) $("resRelatorio").innerHTML = "";
+    atualizarImpressao();
+  }
+
+  function atualizarImpressao() {
+    const btn = $("resImprimir");
+    const box = $("resRelatorio");
+    if (!btn) return;
+    btn.disabled = !(box && box.querySelector(".res-bloco"));
+  }
+
+  function imprimirRelatorio() {
+    const box = $("resRelatorio");
+    if (!box || !box.querySelector(".res-bloco")) return;
+    document.body.classList.add("res-imprimindo");
+    window.print();
   }
 
   async function mostrarConsulta() {
@@ -262,6 +285,8 @@
     }
     if ($("resLogin")) $("resLogin").hidden = true;
     if ($("resConsulta")) $("resConsulta").hidden = false;
+    const titulo = $("resConsultaTitulo");
+    if (titulo) titulo.textContent = sessao.mestre ? "Consulta do relatório" : (sessao.escola || "Consulta do relatório");
     if (!sessao.mestre) {
       const box = $("resEscolaBox");
       const fixa = $("resEscolaFixa");
@@ -272,19 +297,29 @@
       }
     }
     if (!aplicarLiberacao()) return;
-    const rel = $("resRelatorio");
-    if (rel) rel.innerHTML = `<p class="res-aviso">Carregando as turmas da escola.</p>`;
+    limparRelatorio();
+    if ($("resDisciplina")) $("resDisciplina").value = "";
     try {
       await garantirNominal();
     } catch (e) {
+      const rel = $("resRelatorio");
       if (rel) rel.innerHTML = `<p class="res-aviso">Não foi possível carregar as turmas.</p>`;
+      atualizarImpressao();
       return;
     }
-    if (rel) rel.innerHTML = "";
     preencherEscolas();
     preencherAno();
     preencherTurmas();
     atualizarBotao();
+    atualizarImpressao();
+  }
+
+  function anoDoRelatorio(pack, ano) {
+    const anoObj = pack && pack.anos && pack.anos[ano] ? pack.anos[ano] : {};
+    const nome = String(anoObj.nome || "").trim();
+    const slot = nome && anoObj.porAvaliacao && anoObj.porAvaliacao[nome];
+    if (!slot || typeof slot !== "object") return anoObj;
+    return Object.assign({}, anoObj, slot, { nome: nome, porAvaliacao: anoObj.porAvaliacao });
   }
 
   function lerPack() {
@@ -337,7 +372,7 @@
   }
 
   function lancamentosDe(pack, ano, disciplina, roster) {
-    const anoObj = pack && pack.anos && pack.anos[ano];
+    const anoObj = anoDoRelatorio(pack, ano);
     if (!anoObj) return [];
     const port = disciplinaPorNome(pack, "Português");
     return (anoObj.students || []).filter((aluno) => {
@@ -467,33 +502,49 @@
     const escola = escolaEscolhida();
     const ano = $("resAno") ? $("resAno").value : "";
     const turma = $("resTurma") ? $("resTurma").value : "";
+    const disciplinaNome = $("resDisciplina") ? $("resDisciplina").value : "";
     const box = $("resRelatorio");
     if (!box) return;
-    if (!escola || !ano || !turma) {
-      box.innerHTML = `<p class="res-aviso">Escolha o ano e a turma.</p>`;
+    if (!escola || !ano || !turma || !disciplinaNome) {
+      limparRelatorio();
       return;
     }
     const pack = lerPack();
-    const roster = rosterDaTurma(pack, escola, ano, turma);
-    const anoObj = pack && pack.anos && pack.anos[ano] ? pack.anos[ano] : {};
+    const anoObj = anoDoRelatorio(pack, ano);
     const escalas = Array.isArray(anoObj.escalas) && anoObj.escalas.length ? anoObj.escalas : [
       { nome: "Crítico", min: 0, max: 30 },
       { nome: "Básico", min: 31, max: 60 },
       { nome: "Adequado", min: 61, max: 100 },
     ];
-    const blocos = ["Português", "Matemática"].map((nome) => {
-      const disciplina = disciplinaPorNome(pack, nome);
-      const qs = questoesDe(anoObj, disciplina, pack);
+    const disciplina = disciplinaPorNome(pack, disciplinaNome);
+    const qs = questoesDe(anoObj, disciplina, pack);
+    const turmas = turma === TURMA_TODA ? turmasDa(escola, ano) : [turma];
+    const rotuloTurma = turma === TURMA_TODA ? "Escola toda" : turma;
+    const titulo = `Resultado — ${ano} ano — ${escola} — ${rotuloTurma} — ${disciplina.nome}`;
+    if (turma === TURMA_TODA && !turmas.length) {
+      box.innerHTML = `
+        <h2>${esc(titulo)}</h2>
+        <p class="res-aviso">Não há turma lançada nesta série.</p>
+      `;
+      atualizarImpressao();
+      return;
+    }
+    const blocos = turmas.map((nomeTurma) => {
+      const roster = rosterDaTurma(pack, escola, ano, nomeTurma);
       const alunos = lancamentosDe(pack, ano, disciplina, roster);
-      return { disciplina, qs, alunos };
+      return { nomeTurma, roster, alunos };
     });
-    const titulo = `Resultado — ${ano} ano — ${escola} — ${turma} — Português e Matemática`;
+    const miolo = turma === TURMA_TODA
+      ? blocos.map((b) => `<h3>Turma ${esc(b.nomeTurma)}</h3>${htmlBloco(disciplina, qs, b.alunos, b.roster.total, escalas)}`).join("")
+      : htmlBloco(disciplina, qs, blocos[0].alunos, blocos[0].roster.total, escalas);
+    const lista = htmlLista(blocos.map((b) => ({ disciplina, qs, alunos: b.alunos })), escalas);
     box.innerHTML = `
       <h2>${esc(titulo)}</h2>
-      <p class="res-aviso">${esc(escola)} · ${esc(turma)} · Português e Matemática</p>
-      ${blocos.map((b) => htmlBloco(b.disciplina, b.qs, b.alunos, roster.total, escalas)).join("")}
-      ${htmlLista(blocos, escalas)}
+      <p class="res-aviso">${esc(escola)} · ${esc(rotuloTurma)} · ${esc(disciplina.nome)}</p>
+      ${miolo}
+      ${lista}
     `;
+    atualizarImpressao();
   }
 
   async function entrar(ev) {
@@ -553,12 +604,14 @@
     if (sairBtn) sairBtn.addEventListener("click", sair);
     const gerar = $("resGerar");
     if (gerar) gerar.addEventListener("click", gerarRelatorio);
-    ["resEscola", "resAno", "resTurma"].forEach((id) => {
+    const imprimir = $("resImprimir");
+    if (imprimir) imprimir.addEventListener("click", imprimirRelatorio);
+    ["resEscola", "resAno", "resTurma", "resDisciplina"].forEach((id) => {
       const el = $(id);
       if (!el) return;
       el.addEventListener("change", () => {
-        if (id !== "resTurma") preencherTurmas();
-        if ($("resRelatorio")) $("resRelatorio").innerHTML = "";
+        if (id === "resEscola" || id === "resAno") preencherTurmas();
+        limparRelatorio();
         atualizarBotao();
       });
     });
@@ -584,4 +637,5 @@
     });
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ligar);
     else ligar();
+    window.addEventListener("afterprint", () => document.body.classList.remove("res-imprimindo"));
 })();
