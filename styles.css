@@ -2222,6 +2222,13 @@ body:not(.capa-ativa) .capa { display: none; }
   .btn-voltar-capa,
   #realizarLogin,
   #realizarSair { display: none !important; }
+  body.res-imprimindo,
+  body.res-imprimindo.capa-ativa {
+    overflow: visible !important;
+    height: auto !important;
+    background: #fff !important;
+  }
+  body.res-imprimindo .capa { display: block !important; height: auto; background: #fff; }
 }
 
 #realizarLogin {
@@ -2291,6 +2298,14 @@ html.realizar-ok #realizarSair { display: inline-flex; }
   margin: 14px auto 0;
   text-align: left;
 }
+#capaGrupoRes:has(#resConsulta:not([hidden])) {
+  width: 100%;
+}
+#capaGrupoRes:has(#resConsulta:not([hidden])) .res-painel {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
 .res-card {
   background: #fff;
   color: #102027;
@@ -2345,17 +2360,29 @@ html.realizar-ok #realizarSair { display: inline-flex; }
 .res-aviso { color: #4d6a78; }
 #resConsulta .res-grade[hidden], #resGerar[hidden], #resImprimir[hidden], #resLiberacao[hidden] { display: none !important; }
 @media print {
-  body.res-imprimindo .capa,
-  body.res-imprimindo .app { visibility: hidden; }
-  body.res-imprimindo #resRelatorio,
-  body.res-imprimindo #resRelatorio * { visibility: visible; }
-  body.res-imprimindo #resRelatorio {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    margin: 0;
+  body.res-imprimindo .app,
+  body.res-imprimindo .capa-topo,
+  body.res-imprimindo .capa-fundo { display: none !important; }
+  body.res-imprimindo .capa-hero {
+    display: block !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: #fff !important;
   }
+  body.res-imprimindo .capa-hero::before { display: none !important; }
+  body.res-imprimindo #capaGrupoRes,
+  body.res-imprimindo #capaGrupoRes .res-painel,
+  body.res-imprimindo #resConsulta,
+  body.res-imprimindo #resRelatorio {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    position: static !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+  }
+  body.res-imprimindo #resConsulta > :not(#resRelatorio) { display: none !important; }
 }
 .res-tabela { width: 100%; border-collapse: collapse; }
 .res-tabela th, .res-tabela td { border-bottom: 1px solid #e4eee8; padding: 6px 8px; text-align: left; }
