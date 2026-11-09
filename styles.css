@@ -138,17 +138,20 @@ select, input {
 .nav-par { border: 1px solid rgba(168, 140, 255, 0.45) !important; }
 .nav-ideb { border: 1px solid rgba(196, 165, 116, 0.55) !important; }
 .nav-proto { border: 1px solid rgba(94, 184, 214, 0.55) !important; }
+.nav-proto2 { border: 1px solid rgba(232, 163, 23, 0.55) !important; }
 .nav-sit { border: 1px solid rgba(239, 71, 111, 0.45) !important; }
 .comp-tag-spaece { background: rgba(91, 143, 185, 0.25); color: #9ec9ea; }
 .comp-tag-saep { background: rgba(255, 191, 105, 0.22); color: #ffbf69; }
 .comp-tag-diag { background: rgba(46, 196, 182, 0.22); color: #7bd389; }
 .comp-tag-ideb { background: rgba(196, 165, 116, 0.28); color: #e8c9a0; }
 .comp-tag-proto { background: rgba(94, 184, 214, 0.25); color: #8ed0e8; }
+.comp-tag-proto2 { background: rgba(168, 140, 255, 0.28); color: #d4c4ff; }
 body.page-spaece .topbar > .filters,
 body.page-saep1 .topbar > .filters,
 body.page-diag .topbar > .filters,
 body.page-ideb .topbar > .filters,
 body.page-protocolo .topbar > .filters,
+body.page-protocolo2 .topbar > .filters,
 body.page-situacao .topbar > .filters,
 body.page-par .topbar > .filters,
 body.page-cartas .topbar > .filters,
@@ -1746,6 +1749,7 @@ html[data-tema="dia"] .comp-tag-saep { background: rgba(255, 191, 105, 0.4); col
 html[data-tema="dia"] .comp-tag-diag { background: rgba(46, 196, 182, 0.28); color: #0b6b63; }
 html[data-tema="dia"] .comp-tag-ideb { background: rgba(196, 165, 116, 0.4); color: #6b4e2a; }
 html[data-tema="dia"] .comp-tag-proto { background: rgba(94, 184, 214, 0.32); color: #1f5f73; }
+html[data-tema="dia"] .comp-tag-proto2 { background: rgba(168, 140, 255, 0.35); color: #4a2f86; }
 html[data-tema="dia"] .sit-muito { color: #b71c1c; }
 html[data-tema="dia"] .sit-critico { color: #8a6d00; }
 html[data-tema="dia"] .sit-inter { color: #2e7d32; }
@@ -2002,9 +2006,9 @@ body:not(.capa-ativa) .capa { display: none; }
   min-height: 0;
   flex: 1;
   display: flex;
-  align-items: safe center;
-  justify-content: safe center;
-  padding: 28px 20px 24px;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 22px 22px 24px;
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
@@ -2031,7 +2035,7 @@ body:not(.capa-ativa) .capa { display: none; }
 .capa-palco {
   position: relative;
   z-index: 1;
-  width: min(100%, 1180px);
+  width: min(100%, 360px);
   min-width: 0;
 }
 .capa-palco[hidden],
@@ -2043,7 +2047,7 @@ body:not(.capa-ativa) .capa { display: none; }
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  text-align: center;
+  text-align: left;
 }
 .capa-vazio {
   margin: 22px auto 0;
@@ -2063,38 +2067,33 @@ body:not(.capa-ativa) .capa { display: none; }
 }
 .capa-brasao {
   display: block;
-  height: 168px;
+  height: 112px;
   width: auto;
-  max-width: min(100%, 260px);
+  max-width: min(100%, 180px);
   object-fit: contain;
   object-position: center;
 }
 .capa-titulo {
   margin: 0;
   color: #fff;
-  font-size: 34px;
+  font-size: 26px;
   font-weight: 700;
   line-height: 1.2;
   text-align: center;
   text-shadow: 0 2px 16px rgba(0, 0, 0, 0.45);
 }
-.capa-cinco {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-  align-items: stretch;
-  width: min(100%, 920px);
-  margin-inline: auto;
-}
+.capa-cinco,
 .capa-setores {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 14px;
+  grid-template-columns: 1fr;
+  gap: 12px;
   align-items: stretch;
+  width: 100%;
+  margin-inline: 0;
 }
 .capa-voltar {
   display: inline-flex;
-  margin: 0 auto 14px;
+  margin: 0 0 14px;
   border: 0;
   background: #f6faf7;
   color: #102027;
@@ -2104,8 +2103,8 @@ body:not(.capa-ativa) .capa { display: none; }
   padding: 8px 16px;
   cursor: pointer;
 }
-.capa-grupo { text-align: center; }
-.capa-grupo .capa-edicao { justify-content: center; }
+.capa-grupo { text-align: left; }
+.capa-grupo .capa-edicao { justify-content: flex-start; }
 .capa-paineis {
   scroll-margin-top: 84px;
   padding: 36px 22px 72px;
@@ -2153,7 +2152,7 @@ body:not(.capa-ativa) .capa { display: none; }
   gap: 8px;
   width: 100%;
   min-width: 0;
-  min-height: 248px;
+  min-height: 0;
   margin: 0;
   padding: 18px 14px 16px;
   border: 1.5px solid #d4b04a;
@@ -2206,16 +2205,14 @@ body:not(.capa-ativa) .capa { display: none; }
 .capa-card.hidden { display: none; }
 
 @media (max-width: 980px) {
-  .capa-cinco { grid-template-columns: 1fr; }
-  .capa-setores { grid-template-columns: 1fr; }
-  .capa-card { min-height: 0; max-width: 420px; margin-inline: auto; }
-  .capa-titulo { font-size: 26px; }
-  .capa-brasao { height: 132px; }
+  .capa-titulo { font-size: 22px; }
+  .capa-brasao { height: 88px; }
 }
 @media (max-width: 700px) {
   .capa-topo { padding: 10px 14px; }
   .capa-topo-marca img { height: 40px; max-width: 96px; }
   .capa-hero { padding: 16px 14px 18px; }
+  .capa-palco { width: 100%; }
 }
 
 @media print {
