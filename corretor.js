@@ -395,6 +395,75 @@
     return listaReabertos(ctx).includes(marca);
   }
 
+  const CHAVE_APLICACAO = "avalie-aplicacao-finalizada";
+  const CHAVE_REFAZER_APLICACAO = "avalie-aplicacao-refazer";
+
+  function lerMapaLocal(chave) {
+    try {
+      const bruto = JSON.parse(localStorage.getItem(chave) || "{}");
+      return bruto && typeof bruto === "object" && !Array.isArray(bruto) ? bruto : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function nomeAvaliacaoAtual() {
+    const a = atual();
+    return String((a && a.nome) || nomeEmTela || "").trim();
+  }
+
+  function aplicacaoFinalizada(nome) {
+    const n = String(nome == null ? nomeAvaliacaoAtual() : nome).trim();
+    if (!n) return false;
+    return lerMapaLocal(CHAVE_APLICACAO)[n] === true;
+  }
+
+  function reabertoPelaAplicacao(aluno, nome) {
+    const n = String(nome == null ? nomeAvaliacaoAtual() : nome).trim();
+    const marca = idReabertura(aluno);
+    if (!n || !marca) return false;
+    const lista = lerMapaLocal(CHAVE_REFAZER_APLICACAO)[n];
+    return Array.isArray(lista) && lista.includes(marca);
+  }
+
+  function podeLancarDeNovo(escolhido) {
+    return !!(escolhido && (alunoReabertoAgora(escolhido) || reabertoPelaAplicacao(escolhido)));
+  }
+
+  function aplicacaoBloqueiaLancamento(escolhido) {
+    if (!aplicacaoFinalizada()) return false;
+    return !podeLancarDeNovo(escolhido || alunoDoSelect());
+  }
+
+  function marcarRefazerAplicacao(aluno) {
+    const n = nomeAvaliacaoAtual();
+    const marca = idReabertura(aluno);
+    if (!n || !marca) return;
+    const mapa = lerMapaLocal(CHAVE_REFAZER_APLICACAO);
+    const lista = Array.isArray(mapa[n]) ? mapa[n].slice() : [];
+    if (!lista.includes(marca)) lista.push(marca);
+    mapa[n] = lista;
+    try { localStorage.setItem(CHAVE_REFAZER_APLICACAO, JSON.stringify(mapa)); } catch (e) { /* fica neste navegador */ }
+  }
+
+  function consumirRefazerAplicacao(aluno) {
+    const n = nomeAvaliacaoAtual();
+    const marca = idReabertura(aluno);
+    if (!n || !marca) return;
+    const mapa = lerMapaLocal(CHAVE_REFAZER_APLICACAO);
+    if (!Array.isArray(mapa[n])) return;
+    mapa[n] = mapa[n].filter((id) => id !== marca);
+    try { localStorage.setItem(CHAVE_REFAZER_APLICACAO, JSON.stringify(mapa)); } catch (e) { /* fica neste navegador */ }
+  }
+
+  function sincronizarAvaliacaoAtual() {
+    const a = atual();
+    const nome = nomeAvaliacaoAtual();
+    if (!nome) return;
+    a.nome = nome;
+    garantirMapaAvaliacoes(a)[nome] = clonarLancamento(a);
+  }
+
   function turmaTravadaNoLancamento() {
     if (alunoReabertoAgora()) return false;
     return lancamentoFinalizado();
@@ -426,7 +495,9 @@
 
   function alunoJaSalvoNoLancamento() {
     if (!lancamentoVisivel()) return false;
-    return indicePorEscolhido(alunoDoSelect()) >= 0;
+    const escolhido = alunoDoSelect();
+    if (podeLancarDeNovo(escolhido)) return false;
+    return indicePorEscolhido(escolhido) >= 0;
   }
 
   function cadastroDoLancado(student) {
@@ -509,8 +580,10 @@
   }
 
   function aplicarTravaLancamento(travadoClasse) {
+    const escolhido = alunoDoSelect();
     const jaSalvo = alunoJaSalvoNoLancamento();
-    const travado = !!travadoClasse || jaSalvo;
+    const aplicacaoTrava = aplicacaoBloqueiaLancamento(escolhido);
+    const travado = !!travadoClasse || jaSalvo || aplicacaoTrava;
     const salvarBtn = $("crSalvarAluno");
     if (salvarBtn) salvarBtn.disabled = !!travado;
     document.querySelectorAll("#crRespostas select").forEach((el) => {
@@ -521,7 +594,10 @@
     });
     const avisoAluno = $("crLancamentoTrava");
     if (avisoAluno) {
-      if (jaSalvo && !travadoClasse) {
+      if (aplicacaoTrava) {
+        avisoAluno.hidden = false;
+        avisoAluno.textContent = "A aplicação desta avaliação foi finalizada. O lançamento novo só volta quando a chave mestra pedir para refazer a prova deste aluno.";
+      } else if (jaSalvo && !travadoClasse) {
         avisoAluno.hidden = false;
         avisoAluno.textContent = "Este aluno já foi salvo. Para alterar o resultado, use Abrir o resultado em Eixo de avaliação.";
       } else {
@@ -538,7 +614,9 @@
     const voz = $("crVozTexto");
     if (travado) {
       if (voz) {
-        voz.textContent = travadoClasse
+        voz.textContent = aplicacaoTrava
+          ? "A aplicação desta avaliação foi finalizada. O ditado está bloqueado."
+          : travadoClasse
           ? "Lançamento finalizado. O ditado está bloqueado nesta turma."
           : "Este aluno já foi salvo. O ditado está bloqueado. Altere em Eixo de avaliação, em Abrir o resultado.";
       }
@@ -1290,10 +1368,11 @@
     if (!escolhido) {
       aplicarSituacao("");
       pintarRespostas();
+      aplicarTravaLancamento(turmaTravadaNoLancamento());
       return;
     }
     const idx = indicePorEscolhido(escolhido);
-    if (idx >= 0) {
+    if (idx >= 0 && !podeLancarDeNovo(escolhido)) {
       const salvo = atual().students[idx];
       pintarRespostas(salvo.answers);
       aplicarSituacao(situacaoAluno(salvo));
@@ -1302,6 +1381,7 @@
     }
     aplicarSituacao("");
     pintarRespostas();
+    aplicarTravaLancamento(turmaTravadaNoLancamento());
   }
 
   function pintarLancamentoContexto() {
@@ -1700,9 +1780,14 @@
     }
     if (lancamentoVisivel()) sincronizarLancamentoParaAno();
     gravarFormulario();
-    const reaberto = alunoReabertoAgora(escolhido);
-    if (lancamentoFinalizado() && !reaberto) {
+    const reabertoTurma = alunoReabertoAgora(escolhido);
+    const reaberto = podeLancarDeNovo(escolhido);
+    if (lancamentoFinalizado() && !reabertoTurma) {
       avisarLancamentoFechado();
+      return;
+    }
+    if (aplicacaoBloqueiaLancamento(escolhido)) {
+      alert("A aplicação desta avaliação foi finalizada. O lançamento novo só volta quando a chave mestra pedir para refazer a prova deste aluno.");
       return;
     }
     const answers = lerRespostasDom();
@@ -1715,7 +1800,8 @@
       disciplinaId: atual().disciplinaId || "",
     };
     const lista = atual().students;
-    if (indicePorEscolhido(escolhido) >= 0) {
+    const pos = indicePorEscolhido(escolhido);
+    if (pos >= 0 && !reaberto) {
       alert("Este aluno já foi salvo. Para alterar o resultado, abra Eixo de avaliação e use Abrir o resultado.");
       sincronizarSituacaoDoAluno();
       return;
@@ -1724,7 +1810,10 @@
     const marcaSalva = idReabertura(escolhido);
     const posReaberto = abertos.indexOf(marcaSalva);
     if (posReaberto >= 0) abertos.splice(posReaberto, 1);
-    lista.push(registro);
+    consumirRefazerAplicacao(escolhido);
+    if (pos >= 0) lista[pos] = registro;
+    else lista.push(registro);
+    sincronizarAvaliacaoAtual();
     editIndex = -1;
     salvar();
     pintarSelectAlunos();
@@ -1949,6 +2038,8 @@
       if (marca && !abertos.includes(marca)) abertos.push(marca);
     }
     atual().students.splice(idx, 1);
+    marcarRefazerAplicacao(ainda);
+    sincronizarAvaliacaoAtual();
     salvar();
     pintarAlunos();
     pintarFinalizacao();
@@ -2673,14 +2764,23 @@
       estado.textContent = liberado ? "Resultado liberado" : "Em lançamento";
       texto.append(titulo, estado);
       item.appendChild(texto);
-      if (!liberado) {
-        const botao = document.createElement("button");
-        botao.type = "button";
-        botao.className = "btn-compare";
-        botao.textContent = "Liberar resultado";
-        botao.addEventListener("click", () => liberarResultado(nome));
-        item.appendChild(botao);
-      }
+      const acoes = document.createElement("span");
+      acoes.style.display = "flex";
+      acoes.style.gap = "8px";
+      acoes.style.flexWrap = "wrap";
+      acoes.style.justifyContent = "flex-end";
+      const botao = document.createElement("button");
+      botao.type = "button";
+      botao.className = "btn-compare";
+      botao.textContent = "Liberar resultado";
+      botao.addEventListener("click", () => liberarResultado(nome));
+      const trancar = document.createElement("button");
+      trancar.type = "button";
+      trancar.className = "btn-compare";
+      trancar.textContent = "Trancar resultados";
+      trancar.addEventListener("click", () => trancarResultado(nome));
+      acoes.append(botao, trancar);
+      item.appendChild(acoes);
       listaEl.appendChild(item);
     });
   }
@@ -2694,6 +2794,19 @@
     }
     const flags = lerLiberacao();
     flags[nome] = true;
+    gravarLiberacao(flags);
+    pintarAvaliacoes();
+  }
+
+  function trancarResultado(nome) {
+    const erro = $("crAvaliacaoErro");
+    if (erro) erro.textContent = "";
+    if (!sessaoMestraAberta()) {
+      if (erro) erro.textContent = "Somente a chave mestra pode trancar o resultado.";
+      return;
+    }
+    const flags = lerLiberacao();
+    flags[nome] = false;
     gravarLiberacao(flags);
     pintarAvaliacoes();
   }
@@ -2973,4 +3086,9 @@
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", subir);
     else subir();
   }
+
+  window.addEventListener("storage", (ev) => {
+    if (ev.key !== "avalie-aplicacao-finalizada" && ev.key !== "avalie-aplicacao-refazer") return;
+    if ($("crFinalizar")) pintarFinalizacao();
+  });
 })();

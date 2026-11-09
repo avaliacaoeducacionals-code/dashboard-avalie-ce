@@ -616,24 +616,23 @@
       });
     });
     const abrir = $("abrirResultadosCapa");
-    if (abrir) {
-      abrir.addEventListener("click", () => {
-        if (lerSessao()) mostrarConsulta();
-        else {
-          mostrarLogin();
-          const campo = $("resLoginCampo");
-          if (campo) campo.focus();
-        }
-      });
-    }
-    sessao = lerSessao();
-    if (sessao) mostrarConsulta();
-    else mostrarLogin();
+    if (abrir) abrir.addEventListener("click", pedirSenha);
+    mostrarLogin();
+  }
+
+  function pedirSenha() {
+    try { sessionStorage.removeItem(CHAVE_SESSAO); } catch (e) { /* pede a senha de novo */ }
+    sessao = null;
+    if ($("resSenhaCampo")) $("resSenhaCampo").value = "";
+    if ($("resErro")) $("resErro").textContent = "";
+    mostrarLogin();
+    const campo = $("resLoginCampo");
+    if (campo) campo.focus();
   }
 
     window.addEventListener("storage", (ev) => {
       if (ev.key && ev.key !== "avalie-resultado-liberacao" && ev.key !== "avalie-cadastro-avaliacoes") return;
-      if (lerSessao()) mostrarConsulta();
+      if ($("resConsulta") && !$("resConsulta").hidden && lerSessao()) mostrarConsulta();
     });
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ligar);
     else ligar();

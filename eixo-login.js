@@ -91,14 +91,99 @@
     const banco = $("eixoBanco");
     if (form) form.hidden = !!liberado;
     if (banco) banco.hidden = !liberado;
-    if (!liberado) mostrarSenhas(false);
+    if (!liberado) {
+      mostrarSenhas(false);
+      mostrarAplicacao(false);
+    }
+  }
+
+  function painelAberto(id) {
+    const painel = $(id);
+    return !!(painel && !painel.hidden);
   }
 
   function mostrarSenhas(aberto) {
     const painel = $("eixoSenhas");
     const cartoes = $("eixoCartoes");
+    const aplicacao = $("eixoAplicacao");
     if (painel) painel.hidden = !aberto;
-    if (cartoes) cartoes.hidden = !!aberto;
+    if (aberto && aplicacao) aplicacao.hidden = true;
+    if (cartoes) cartoes.hidden = !!aberto || painelAberto("eixoAplicacao");
+  }
+
+  function mostrarAplicacao(aberto) {
+    const painel = $("eixoAplicacao");
+    const cartoes = $("eixoCartoes");
+    const senhas = $("eixoSenhas");
+    if (painel) painel.hidden = !aberto;
+    if (aberto && senhas) senhas.hidden = true;
+    if (cartoes) cartoes.hidden = !!aberto || painelAberto("eixoSenhas");
+  }
+
+  const CHAVE_APLICACAO = "avalie-aplicacao-finalizada";
+
+  function lerCadastroAvaliacoes() {
+    try {
+      const bruto = JSON.parse(localStorage.getItem("avalie-cadastro-avaliacoes") || "[]");
+      if (!Array.isArray(bruto)) return [];
+      return bruto.map((item) => String(item && item.nome || "").trim()).filter(Boolean);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function lerAplicacao() {
+    try {
+      const bruto = JSON.parse(localStorage.getItem(CHAVE_APLICACAO) || "{}");
+      return bruto && typeof bruto === "object" && !Array.isArray(bruto) ? bruto : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function pintarAplicacao() {
+    const lista = $("eixoAplicacaoLista");
+    const aviso = $("eixoAplicacaoAviso");
+    if (!lista) return;
+    const nomes = lerCadastroAvaliacoes();
+    const flags = lerAplicacao();
+    lista.replaceChildren();
+    if (!nomes.length) {
+      if (aviso) aviso.textContent = "Cadastre uma avaliação no Banco antes de finalizar a aplicação.";
+      return;
+    }
+    if (aviso) aviso.textContent = "Enquanto a aplicação não for finalizada, a escola continua lançando. Depois de finalizar, um lançamento novo só volta com o refazer daquele aluno.";
+    nomes.forEach((nome) => {
+      const linha = document.createElement("p");
+      const finalizada = flags[nome] === true;
+      linha.textContent = nome + " — " + (finalizada ? "Aplicação finalizada" : "Em aplicação");
+      if (!finalizada) {
+        const botao = document.createElement("button");
+        botao.type = "button";
+        botao.className = "capa-btn";
+        botao.textContent = "Finalizar aplicação de prova";
+        botao.addEventListener("click", () => finalizarAplicacao(nome));
+        linha.appendChild(document.createTextNode(" "));
+        linha.appendChild(botao);
+      }
+      lista.appendChild(linha);
+    });
+  }
+
+  function finalizarAplicacao(nome) {
+    if (!lerSessao()) return;
+    const segue = confirm("Finalizar a aplicação de " + nome + "?\n\nA escola não poderá lançar alunos novos desta avaliação, até um refazer liberar o aluno.");
+    if (!segue) return;
+    const flags = lerAplicacao();
+    flags[nome] = true;
+    try { localStorage.setItem(CHAVE_APLICACAO, JSON.stringify(flags)); } catch (e) { /* fica neste navegador */ }
+    pintarAplicacao();
+  }
+
+  function abrirAplicacao() {
+    if (!lerSessao()) return;
+    mostrarAplicacao(true);
+    pintarAplicacao();
   }
 
   function carregarSenhasLocais() {
@@ -203,6 +288,10 @@
     if (abrirSenhasBtn) abrirSenhasBtn.addEventListener("click", abrirSenhas);
     const voltarSenhas = $("eixoSenhasVoltar");
     if (voltarSenhas) voltarSenhas.addEventListener("click", () => mostrarSenhas(false));
+    const abrirAplicacaoBtn = $("eixoAbrirAplicacao");
+    if (abrirAplicacaoBtn) abrirAplicacaoBtn.addEventListener("click", abrirAplicacao);
+    const voltarAplicacao = $("eixoAplicacaoVoltar");
+    if (voltarAplicacao) voltarAplicacao.addEventListener("click", () => mostrarAplicacao(false));
     const abrir = document.querySelector("[data-capa-grupo='capaGrupoEixo']");
     if (abrir) abrir.addEventListener("click", () => mostrar(!!lerSessao()));
   }
