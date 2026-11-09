@@ -2935,11 +2935,8 @@
     $("crVozPausar").addEventListener("click", pausarVoz);
     $("crVozParar").addEventListener("click", pararVoz);
     pintar();
-    if (querRealizar()) {
-      acessoRealizar = lerSessaoRealizar();
-      if (!acessoRealizar) mostrarTelaLogin();
-      else entrarNoLancamento();
-    } else {
+    if (querRealizar()) mostrarTelaLogin();
+    else {
       document.documentElement.classList.remove("realizar-login", "realizar-ok");
       mostrarBanco();
     }
@@ -2959,9 +2956,7 @@
     iniciar();
     if (!iniciado) return;
     if (realizar) {
-      acessoRealizar = lerSessaoRealizar();
-      if (!acessoRealizar) mostrarTelaLogin();
-      else entrarNoLancamento();
+      mostrarTelaLogin();
       return;
     }
     acessoRealizar = null;
