@@ -381,6 +381,7 @@ html:not([data-tema="dia"]) select option { color: #e8f2f6; background-color: #1
 }
 .corretor-escala { display: grid; grid-template-columns: 44px minmax(120px, 1.4fr) 72px auto 72px auto auto; gap: 8px; margin-bottom: 8px; align-items: center; }
 .corretor-escala .cr-cor { width: 44px; height: 36px; padding: 2px; border: 1px solid #d0d5dd; border-radius: 8px; background: #fff; }
+.cr-nome-faixa { font-weight: 700; border-color: transparent; }
 .cr-escala-a { color: #667085; font-weight: 700; text-align: center; }
 .cr-acertos { font-weight: 700; color: #344054; white-space: nowrap; }
 .cr-escala-medidor { max-width: 320px; margin: 8px 0 14px; }
@@ -2429,9 +2430,10 @@ html.realizar-ok #realizarSair { display: inline-flex; }
 .res-barra { display: flex; height: 28px; border-radius: 4px; overflow: hidden; background: #eceff3; }
 .res-barra i { display: block; height: 100%; }
 .res-legenda { display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; margin-top: 14px; align-items: center; }
-.res-leg-nome { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.res-leg-nome i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-.res-leg-nome small { display: block; width: 100%; margin-left: 18px; color: #5c6778; font-size: 13px; }
+.res-leg-nome { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.res-cat { display: inline-flex; align-items: center; min-height: 28px; padding: 4px 12px; border-radius: 4px; font-weight: 700; line-height: 1.2; }
+.res-leg-nome small { display: block; margin: 0; color: #5c6778; font-size: 13px; }
 .res-leg-pct { font-weight: 700; }
 .res-presenca { margin: 14px 0 0; color: #3d4a57; font-weight: 700; }
-.res-detalhe { margin-top: 18px; }
+.res-descritores { margin-top: 18px; background: #fff; border: 1px solid #e7eaf0; border-radius: 16px; padding: 18px 20px; }
+.res-descritores h3 { margin: 0 0 12px; }

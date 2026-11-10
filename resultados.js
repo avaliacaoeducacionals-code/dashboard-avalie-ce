@@ -496,22 +496,84 @@
     ];
   }
 
+  function corSegura(cor, reserva) {
+    const texto = String(cor || "").trim();
+    return /^#[0-9a-fA-F]{6}$/.test(texto) ? texto : reserva;
+  }
+
+  function corTexto(cor) {
+    const hex = corSegura(cor, "#1c2434").slice(1);
+    const n = parseInt(hex, 16);
+    const y = (((n >> 16) & 255) * 299 + ((n >> 8) & 255) * 587 + (n & 255) * 114) / 1000;
+    return y > 160 ? "#1c2434" : "#ffffff";
+  }
+
+  function chaveNivel(nome) {
+    return String(nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  }
+
+  function escalasAntigas(lista) {
+    if (!Array.isArray(lista) || lista.length !== 3) return false;
+    const chave = lista.map((s) => `${s && s.nome}|${Number(s && s.min)}|${Number(s && s.max)}`).join(";");
+    return chave === "Crítico|0|30;Básico|31|60;Adequado|61|100";
+  }
+
   function escalasDe(slot) {
     const lista = slot && Array.isArray(slot.escalas) ? slot.escalas : [];
-    const antiga = lista.length === 3
-      && lista.map((s) => `${s && s.nome}|${Number(s && s.min)}|${Number(s && s.max)}`).join(";")
-        === "Crítico|0|30;Básico|31|60;Adequado|61|100";
-    const reservas = ["#e23b32", "#f39a3e", "#f2c94c", "#2f9e44"];
-    const base = !lista.length || antiga ? escalasPadrao() : lista;
-    const xs = base
-      .filter((s) => s && s.nome && Number.isFinite(Number(s.min)) && Number.isFinite(Number(s.max)))
-      .map((s) => ({ nome: String(s.nome), min: Number(s.min), max: Number(s.max), cor: String(s.cor || "").trim() }))
-      .sort((a, b) => a.min - b.min)
-      .map((s, i) => ({
-        ...s,
-        cor: /^#[0-9a-fA-F]{6}$/.test(s.cor) ? s.cor : reservas[Math.min(i, reservas.length - 1)],
-      }));
-    return xs.length ? xs : escalasPadrao();
+    const faixas = {
+      "muito critico": [0, 38],
+      critico: [39, 58],
+      intermediario: [59, 85],
+      adequado: [86, 100],
+    };
+    const cores = {
+      "muito critico": "#e23b32",
+      critico: "#f39a3e",
+      intermediario: "#f2c94c",
+      adequado: "#2f9e44",
+    };
+    const canonicas = new Set(Object.values(cores));
+    if (!lista.length || escalasAntigas(lista)) return escalasPadrao();
+    const porChave = new Map();
+    const outras = [];
+    lista.forEach((s) => {
+      const nome = String(s && s.nome || "").trim();
+      const chave = chaveNivel(nome);
+      const min = Number(s && s.min);
+      const max = Number(s && s.max);
+      const cor = String(s && s.cor || "").trim();
+      const valida = Number.isFinite(min) && Number.isFinite(max) && max > min;
+      if (faixas[chave]) {
+        const atual = porChave.get(chave);
+        if (!atual || (!atual.valida && valida)) porChave.set(chave, { nome, min, max, cor, valida });
+        return;
+      }
+      if (!nome || !valida) return;
+      outras.push({ nome, min, max, cor: corSegura(cor, "#7b6fe0") });
+    });
+    const saida = [];
+    Object.keys(faixas).forEach((chave) => {
+      const item = porChave.get(chave);
+      if (!item) return;
+      const faixa = faixas[chave];
+      const corNome = cores[chave];
+      const corBaixa = item.cor.toLowerCase();
+      const corOk = /^#[0-9a-fA-F]{6}$/.test(item.cor);
+      const corDeOutra = corOk && canonicas.has(corBaixa) && corBaixa !== corNome;
+      saida.push({
+        nome: item.nome,
+        min: item.valida ? item.min : faixa[0],
+        max: item.valida ? item.max : faixa[1],
+        cor: !item.valida || !corOk || corDeOutra ? corNome : item.cor,
+        chave,
+      });
+    });
+    const usadas = new Set(saida.map((s) => s.cor.toLowerCase()));
+    const completo = [...canonicas].every((cor) => usadas.has(cor));
+    const ajustadas = (completo ? saida : saida.map((s) => ({ ...s, cor: cores[s.chave] })))
+      .map(({ nome, min, max, cor }) => ({ nome, min, max, cor }));
+    const final = ajustadas.concat(outras).sort((a, b) => a.min - b.min || a.max - b.max);
+    return final.length ? final : escalasPadrao();
   }
 
   function caminhosDoArco(escalas) {
@@ -751,7 +813,7 @@
       ? `<div class="res-barra">${segmentos.map((s) => `<i style="width:${s.pct}%;background:${s.cor}"></i>`).join("")}</div>`
       : `<p class="res-aviso">Sem respostas lançadas para distribuir.</p>`;
     const legenda = segmentos.map((s) => `
-      <div class="res-leg-nome"><i style="background:${s.cor}"></i>${esc(s.nome)}<small>${s.n} estudante(s)</small></div>
+      <div class="res-leg-nome"><span class="res-cat" style="background:${s.cor};color:${corTexto(s.cor)}">${esc(s.nome)}</span><small>${s.n} estudante(s)</small></div>
       <div class="res-leg-pct">${total ? fmtNum(s.pct) + "%" : "—"}</div>
     `).join("");
     const ponteiro = media == null ? "" : `
@@ -792,6 +854,54 @@
     }
     if (!botoes.length) return "";
     return `<div class="res-abas" role="tablist">${botoes.join("")}</div>`;
+  }
+
+  function textoDoDescritor(q, ano, disciplinaNome) {
+    const cod = String(q && q.descriptor || "").trim();
+    let nome = String(q && q.descriptorText || "").trim();
+    if (/^escolha o descritor/i.test(nome)) nome = "";
+    if (!nome && cod && window.HAB_NOMES) {
+      const mapa = window.HAB_NOMES[ano + "|" + disciplinaNome];
+      if (mapa && mapa[cod]) nome = String(mapa[cod]);
+    }
+    if (!cod && !nome) return null;
+    return { cod, nome: nome || cod };
+  }
+
+  function htmlDescritores(med, ano, disciplinaNome) {
+    const presentes = (med.alunos || []).filter(entraNaMedia);
+    const grupos = new Map();
+    (med.qs || []).forEach((q, i) => {
+      const info = textoDoDescritor(q, ano, disciplinaNome);
+      if (!info) return;
+      const chave = (info.cod || info.nome).toUpperCase();
+      if (!grupos.has(chave)) grupos.set(chave, { cod: info.cod, nome: info.nome, questoes: 0, acertos: 0, oportunidades: 0 });
+      const grupo = grupos.get(chave);
+      grupo.questoes += 1;
+      if (info.nome && info.nome !== info.cod) grupo.nome = info.nome;
+      const correta = q && q.correct != null ? String(q.correct).trim() : "";
+      presentes.forEach((aluno) => {
+        grupo.oportunidades += 1;
+        const resp = respostaLancada((aluno.answers || [])[i]);
+        if (resp && correta && resp === correta) grupo.acertos += 1;
+      });
+    });
+    const linhas = [...grupos.values()];
+    if (!linhas.length) return "";
+    const body = linhas.map((grupo) => {
+      const pct = grupo.oportunidades ? `${fmtNum((100 * grupo.acertos) / grupo.oportunidades)}%` : "—";
+      const titulo = grupo.cod && grupo.nome && grupo.nome !== grupo.cod ? `${grupo.cod} — ${grupo.nome}` : (grupo.nome || grupo.cod);
+      return `<tr><td>${esc(titulo)}</td><td>${grupo.questoes}</td><td>${grupo.acertos}</td><td>${pct}</td></tr>`;
+    }).join("");
+    return `
+      <section class="res-descritores res-bloco">
+        <h3>Análise dos descritores${med.nome ? ` — ${esc(med.nome)}` : ""}</h3>
+        <div class="table-wrap"><table class="res-tabela">
+          <thead><tr><th>Descritor</th><th>Questões</th><th>Acertos</th><th>Percentual</th></tr></thead>
+          <tbody>${body}</tbody>
+        </table></div>
+      </section>
+    `;
   }
 
   function parComparavel(pack, ano, disciplina, escolhida) {
@@ -837,6 +947,7 @@
       const delta = i > 0 && atual != null && anterior != null ? htmlDelta(atual, anterior) : "";
       return htmlMedidor(med, delta, i > 0, i);
     }).join("");
+    const analises = medicoes.map((med) => htmlDescritores(med, ano, disciplina.nome)).join("");
     const detalhes = medicoes.map((med) => `
       <section class="res-detalhe">
         <h3>${esc(med.nome)}</h3>
@@ -849,6 +960,7 @@
       ${htmlAbas()}
       <p class="res-aviso">${esc(ano)} ano · ${esc(disciplina.nome)} · ${esc(recorte)}</p>
       <div class="res-painel-cards">${cartoes}</div>
+      ${analises}
       ${detalhes}
     `;
     atualizarImpressao();

@@ -800,25 +800,82 @@
     return /^#[0-9a-fA-F]{6}$/.test(texto) ? texto : reserva;
   }
 
+  function corTexto(cor) {
+    const hex = corSegura(cor, "#1c2434").slice(1);
+    const n = parseInt(hex, 16);
+    const y = (((n >> 16) & 255) * 299 + ((n >> 8) & 255) * 587 + (n & 255) * 114) / 1000;
+    return y > 160 ? "#1c2434" : "#ffffff";
+  }
+
+  function chaveNivel(nome) {
+    return String(nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  }
+
   function escalasAntigas(lista) {
     if (!Array.isArray(lista) || lista.length !== 3) return false;
     const chave = lista.map((s) => `${s && s.nome}|${Number(s && s.min)}|${Number(s && s.max)}`).join(";");
     return chave === "Crítico|0|30;Básico|31|60;Adequado|61|100";
   }
 
-  function escalasEmUso(lista) {
-    const reservas = ["#e23b32", "#f39a3e", "#f2c94c", "#2f9e44"];
+  function repararEscalas(lista) {
+    const faixas = {
+      "muito critico": [0, 38],
+      critico: [39, 58],
+      intermediario: [59, 85],
+      adequado: [86, 100],
+    };
+    const cores = {
+      "muito critico": "#e23b32",
+      critico: "#f39a3e",
+      intermediario: "#f2c94c",
+      adequado: "#2f9e44",
+    };
+    const canonicas = new Set(Object.values(cores));
     if (!Array.isArray(lista) || !lista.length || escalasAntigas(lista)) return escalasPadrao();
-    return lista
-      .map((s) => ({
-        nome: String(s && s.nome || ""),
-        min: Number(s && s.min),
-        max: Number(s && s.max),
-        cor: String(s && s.cor || ""),
-      }))
-      .filter((s) => Number.isFinite(s.min) && Number.isFinite(s.max))
-      .sort((a, b) => a.min - b.min)
-      .map((s, i) => ({ ...s, cor: corSegura(s.cor, reservas[Math.min(i, reservas.length - 1)]) }));
+    const porChave = new Map();
+    const outras = [];
+    lista.forEach((s) => {
+      const nome = String(s && s.nome || "").trim();
+      const chave = chaveNivel(nome);
+      const min = Number(s && s.min);
+      const max = Number(s && s.max);
+      const cor = String(s && s.cor || "").trim();
+      const valida = Number.isFinite(min) && Number.isFinite(max) && max > min;
+      if (faixas[chave]) {
+        const atual = porChave.get(chave);
+        if (!atual || (!atual.valida && valida)) porChave.set(chave, { nome, min, max, cor, valida });
+        return;
+      }
+      if (!nome || !valida) return;
+      outras.push({ nome, min, max, cor: corSegura(cor, "#7b6fe0") });
+    });
+    const saida = [];
+    Object.keys(faixas).forEach((chave) => {
+      const item = porChave.get(chave);
+      if (!item) return;
+      const faixa = faixas[chave];
+      const corNome = cores[chave];
+      const corBaixa = item.cor.toLowerCase();
+      const corOk = /^#[0-9a-fA-F]{6}$/.test(item.cor);
+      const corDeOutra = corOk && canonicas.has(corBaixa) && corBaixa !== corNome;
+      saida.push({
+        nome: item.nome,
+        min: item.valida ? item.min : faixa[0],
+        max: item.valida ? item.max : faixa[1],
+        cor: !item.valida || !corOk || corDeOutra ? corNome : item.cor,
+        chave,
+      });
+    });
+    const usadas = new Set(saida.map((s) => s.cor.toLowerCase()));
+    const completo = [...canonicas].every((cor) => usadas.has(cor));
+    const ajustadas = (completo ? saida : saida.map((s) => ({ ...s, cor: cores[s.chave] })))
+      .map(({ nome, min, max, cor }) => ({ nome, min, max, cor }));
+    const final = ajustadas.concat(outras).sort((a, b) => a.min - b.min || a.max - b.max);
+    return final.length ? final : escalasPadrao();
+  }
+
+  function escalasEmUso(lista) {
+    return repararEscalas(lista);
   }
 
   function acertosDaFaixa(percentual, questoes) {
@@ -876,11 +933,21 @@
     `;
   }
 
+  function pintarBarraDoNome(row) {
+    const nome = row.querySelector(".cr-nome");
+    const corInput = row.querySelector(".cr-cor");
+    if (!nome || !corInput) return;
+    const cor = corSegura(corInput.value, "#f39a3e");
+    nome.style.backgroundColor = cor;
+    nome.style.color = corTexto(cor);
+  }
+
   function atualizarMedidorEscalas() {
     document.querySelectorAll("#crEscalas .corretor-escala").forEach((row) => {
       const alvo = row.querySelector(".cr-acertos");
       const max = row.querySelector(".cr-max");
       if (alvo && max) alvo.textContent = textoAcertos(max.value, lerNumeroQuestoesDoDom(atual()));
+      pintarBarraDoNome(row);
     });
     const box = $("crEscalaMedidor");
     if (box) box.innerHTML = htmlArcoCategorias(lerEscalas(), lerNumeroQuestoesDoDom(atual()));
@@ -889,12 +956,12 @@
   function lerEscalas() {
     const linhas = [...document.querySelectorAll("#crEscalas .corretor-escala")];
     if (!linhas.length) return escalasEmUso(atual().escalas);
-    return linhas.map((row) => ({
+    return escalasEmUso(linhas.map((row) => ({
       nome: row.querySelector(".cr-nome").value.trim(),
       min: Number(row.querySelector(".cr-min").value),
       max: Number(row.querySelector(".cr-max").value),
       cor: corSegura(row.querySelector(".cr-cor") && row.querySelector(".cr-cor").value, "#f39a3e"),
-    }));
+    })));
   }
 
   function descritoresAtuais() {
@@ -1285,13 +1352,22 @@
 
   function pintarEscalas() {
     const box = $("crEscalas");
-    const escalas = escalasEmUso(atual().escalas);
+    const brutas = Array.isArray(atual().escalas) ? atual().escalas : [];
+    const rascunhos = brutas
+      .filter((s) => !String(s && s.nome || "").trim() && !(Number(s && s.max) > Number(s && s.min)))
+      .map((s) => ({
+        nome: "",
+        min: Number.isFinite(Number(s.min)) ? Number(s.min) : 0,
+        max: Number.isFinite(Number(s.max)) ? Number(s.max) : 0,
+        cor: corSegura(s.cor, "#7b6fe0"),
+      }));
+    const escalas = escalasEmUso(brutas).concat(rascunhos);
     atual().escalas = JSON.parse(JSON.stringify(escalas));
     const n = lerNumeroQuestoesDoDom(atual());
     box.innerHTML = escalas.map((s) => `
       <div class="corretor-escala">
         <input class="cr-cor" type="color" value="${esc(s.cor)}" aria-label="Cor de ${esc(s.nome || "categoria")}" />
-        <input class="cr-nome" type="text" value="${esc(s.nome)}" placeholder="Nome da categoria" />
+        <input class="cr-nome cr-nome-faixa" type="text" value="${esc(s.nome)}" placeholder="Nome da categoria" style="background-color:${esc(s.cor)};color:${corTexto(s.cor)}" />
         <input class="cr-min" type="number" min="0" max="100" value="${Number.isFinite(Number(s.min)) ? s.min : 0}" aria-label="Percentual mínimo" />
         <span class="cr-escala-a">a</span>
         <input class="cr-max" type="number" min="0" max="100" value="${Number.isFinite(Number(s.max)) ? s.max : 0}" aria-label="Percentual máximo" />
@@ -3051,7 +3127,11 @@
     });
     $("crEscalas").addEventListener("input", atualizarMedidorEscalas);
     $("crNQuest").addEventListener("input", atualizarMedidorEscalas);
-    $("crEscalas").addEventListener("change", () => { gravarFormulario(); salvar(); });
+    $("crEscalas").addEventListener("change", () => {
+      gravarFormulario();
+      salvar();
+      pintarEscalas();
+    });
     $("crConfigurar").addEventListener("click", configurarQuestoes);
     $("crGabarito").addEventListener("change", (ev) => {
       if (ev.target.classList.contains("cr-tipo")) {
