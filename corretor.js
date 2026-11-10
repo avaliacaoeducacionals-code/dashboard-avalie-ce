@@ -801,8 +801,10 @@
   }
 
   function corTexto(cor) {
-    const hex = corSegura(cor, "#1c2434").slice(1);
-    const n = parseInt(hex, 16);
+    const hex = corSegura(cor, "#1c2434").toLowerCase();
+    if (hex === "#f2c94c") return "#1c2434";
+    if (hex === "#e23b32" || hex === "#f39a3e" || hex === "#2f9e44") return "#ffffff";
+    const n = parseInt(hex.slice(1), 16);
     const y = (((n >> 16) & 255) * 299 + ((n >> 8) & 255) * 587 + (n & 255) * 114) / 1000;
     return y > 160 ? "#1c2434" : "#ffffff";
   }
@@ -2289,13 +2291,25 @@
     return (q && q.descriptorText) || "";
   }
 
+  function htmlMarcaNivel(nota) {
+    const nome = nivelDe(nota);
+    const canonicas = {
+      "muito critico": "#e23b32",
+      critico: "#f39a3e",
+      intermediario: "#f2c94c",
+      adequado: "#2f9e44",
+    };
+    const faixa = (atual().escalas || []).find((s) => s && s.nome === nome);
+    const fundo = canonicas[chaveNivel(nome)] || corSegura(faixa && faixa.cor, "#e23b32");
+    return `<span class="res-nivel" style="background:${fundo};color:${corTexto(fundo)}">${esc(`${Number(nota).toFixed(1)}% · ${nome}`)}</span>`;
+  }
+
   function textoResultadoAluno(student, qs) {
-    if (!student) return "Sem lançamento";
+    if (!student) return esc("Sem lançamento");
     const sit = situacaoAluno(student);
-    if (sit) return sit;
-    if (!qs.length) return "Sem gabarito";
-    const nota = notaComQuestoes(student, qs);
-    return `${nota.toFixed(1)}% · ${nivelDe(nota)}`;
+    if (sit) return esc(sit);
+    if (!qs.length) return esc("Sem gabarito");
+    return htmlMarcaNivel(notaComQuestoes(student, qs));
   }
 
   function idSeguro(id) {
@@ -2348,7 +2362,7 @@
           <div class="kpi"><span>Presentes</span><strong>${r.presentes}</strong></div>
           <div class="kpi"><span>Ausência</span><strong>${r.ausencia.toFixed(1)}%</strong></div>
           <div class="kpi"><span>Média</span><strong>${fmtPct(r.media)}</strong></div>
-          <div class="kpi"><span>Nível</span><strong>${r.media == null ? "—" : esc(nivelDe(r.media))}</strong></div>
+          <div class="kpi"><span>Nível</span><strong>${r.media == null ? "—" : htmlMarcaNivel(r.media)}</strong></div>
           <div class="kpi"><span>Mediana</span><strong>${fmtPct(r.mediana)}</strong></div>
           <div class="kpi"><span>Desvio</span><strong>${r.desvio == null ? "—" : r.desvio.toFixed(2)}</strong></div>
         </div>
@@ -2390,7 +2404,7 @@
     const body = linhas.map(([chave, nome]) => {
       const cols = porDisc.map(({ qs, alunos }) => {
         const student = alunos.find((s) => (s.alunoId ? "id:" + s.alunoId : "nome:" + fold(s.name || "")) === chave);
-        return `<td>${esc(textoResultadoAluno(student, qs))}</td>`;
+        return `<td>${textoResultadoAluno(student, qs)}</td>`;
       }).join("");
       return `<tr><td>${esc(nome)}</td>${cols}</tr>`;
     }).join("");
@@ -2467,7 +2481,7 @@
       });
       const perc = qs.length ? Math.round((100 * certos) / qs.length) : 0;
       const classe = perc === 100 ? "alta" : (perc >= 50 ? "media" : "baixa");
-      row += `<td>${certos}</td><td class="${classe}">${perc}</td><td>${esc(nivelDe(perc))}</td></tr>`;
+      row += `<td>${certos}</td><td class="${classe}">${perc}</td><td>${htmlMarcaNivel(perc)}</td></tr>`;
       body += row;
     });
     body += "</tbody>";
@@ -2486,7 +2500,7 @@
       foot += `<td class="${classe}">${p}%</td>`;
     });
     foot += "<td></td><td></td><td></td></tr><tr><td>Nível da questão</td>";
-    percQ.forEach((p) => { foot += `<td>${p == null ? "—" : esc(nivelDe(p))}</td>`; });
+    percQ.forEach((p) => { foot += `<td>${p == null ? "—" : htmlMarcaNivel(p)}</td>`; });
     foot += "<td></td><td></td><td></td></tr>";
     marcas.forEach((marca) => {
       foot += `<tr><td>Marcaram ${marca === "-" ? "em branco" : marca}</td>`;

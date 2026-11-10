@@ -502,8 +502,10 @@
   }
 
   function corTexto(cor) {
-    const hex = corSegura(cor, "#1c2434").slice(1);
-    const n = parseInt(hex, 16);
+    const hex = corSegura(cor, "#1c2434").toLowerCase();
+    if (hex === "#f2c94c") return "#1c2434";
+    if (hex === "#e23b32" || hex === "#f39a3e" || hex === "#2f9e44") return "#ffffff";
+    const n = parseInt(hex.slice(1), 16);
     const y = (((n >> 16) & 255) * 299 + ((n >> 8) & 255) * 587 + (n & 255) * 114) / 1000;
     return y > 160 ? "#1c2434" : "#ffffff";
   }
@@ -690,14 +692,39 @@
     return abaixo ? abaixo.nome : "N/A";
   }
 
-  function textoAluno(aluno, qs, escalas) {
-    if (!aluno) return "Sem lançamento";
-    if (naoFezProva(aluno)) return situacao(aluno);
-    if (!temRespostaLancada(aluno)) return situacao(aluno) || "ND";
-    if (!qs.length) return "Sem gabarito";
+  function faixaDaNota(nota, escalas) {
+    const xs = (escalas || [])
+      .filter((s) => s && s.nome && Number.isFinite(Number(s.min)) && Number.isFinite(Number(s.max)))
+      .map((s) => ({ nome: s.nome, min: Number(s.min), max: Number(s.max), cor: String(s.cor || "") }))
+      .sort((a, b) => a.min - b.min);
+    const hit = xs.find((s) => nota >= s.min && nota <= s.max);
+    if (hit) return hit;
+    let abaixo = null;
+    xs.forEach((s) => { if (s.max < nota) abaixo = s; });
+    return abaixo;
+  }
+
+  function htmlMarcaNivel(nota, escalas) {
+    const faixa = faixaDaNota(nota, escalas);
+    const nome = faixa ? faixa.nome : nivelDe(nota, escalas);
+    const canonicas = {
+      "muito critico": "#e23b32",
+      critico: "#f39a3e",
+      intermediario: "#f2c94c",
+      adequado: "#2f9e44",
+    };
+    const fundo = canonicas[chaveNivel(nome)] || corSegura(faixa && faixa.cor, "#e23b32");
+    return `<span class="res-nivel" style="background:${fundo};color:${corTexto(fundo)}">${esc(`${Number(nota).toFixed(1)}% · ${nome}`)}</span>`;
+  }
+
+  function htmlTextoAluno(aluno, qs, escalas) {
+    if (!aluno) return esc("Sem lançamento");
+    if (naoFezProva(aluno)) return esc(situacao(aluno));
+    if (!temRespostaLancada(aluno)) return esc(situacao(aluno) || "ND");
+    if (!qs.length) return esc("Sem gabarito");
     const nota = notaDe(aluno, qs);
-    if (nota == null) return "ND";
-    return `${nota.toFixed(1)}% · ${nivelDe(nota, escalas)}`;
+    if (nota == null) return esc("ND");
+    return htmlMarcaNivel(nota, escalas);
   }
 
   function htmlBloco(disciplina, qs, alunos, rosterTotal, escalas) {
@@ -722,7 +749,7 @@
           <div class="res-kpi"><span>Presentes</span><strong>${presentes}</strong></div>
           <div class="res-kpi"><span>Ausência</span><strong>${ausencia == null ? "—" : `${ausencia.toFixed(1)}%`}</strong></div>
           <div class="res-kpi"><span>Média</span><strong>${fmt(media)}</strong></div>
-          <div class="res-kpi"><span>Nível</span><strong>${media == null ? "—" : esc(nivelDe(media, escalas))}</strong></div>
+          <div class="res-kpi"><span>Nível</span><strong>${media == null ? "—" : htmlMarcaNivel(media, escalas)}</strong></div>
         </div>
         ${htmlRespostas(qs, alunos)}
       </section>
@@ -771,7 +798,7 @@
     const body = linhas.map(([chave, nome]) => {
       const cols = blocos.map((bloco) => {
         const aluno = bloco.alunos.find((item) => (item.alunoId ? "id:" + item.alunoId : "nome:" + fold(item.name || "")) === chave);
-        return `<td>${esc(textoAluno(aluno, bloco.qs, escalas))}</td>`;
+        return `<td>${htmlTextoAluno(aluno, bloco.qs, escalas)}</td>`;
       }).join("");
       return `<tr><td>${esc(nome)}</td>${cols}</tr>`;
     }).join("");
@@ -821,7 +848,6 @@
       <circle cx="100" cy="102" r="5" fill="#1c2434"/>
     `;
     const ausencia = medicao.ausencia == null ? "—" : `${fmtNum(medicao.ausencia)}%`;
-    const nivel = media == null ? "—" : nivelDe(media, medicao.escalas);
     return `
       <article class="res-medidor res-bloco${comparado ? " comparado" : ""}">
         <h3>${esc(medicao.nome)}</h3>
@@ -837,7 +863,7 @@
         <h4>Distribuição por níveis de aprendizagem</h4>
         ${barra}
         <div class="res-legenda">${legenda}</div>
-        <p class="res-presenca">Presentes ${medicao.presentes.length} · Ausência ${ausencia} · Nível ${esc(nivel)}</p>
+        <p class="res-presenca">Presentes ${medicao.presentes.length} · Ausência ${ausencia}${media == null ? "" : ` · ${htmlMarcaNivel(media, medicao.escalas)}`}</p>
       </article>
     `;
   }
