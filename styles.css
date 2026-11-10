@@ -2389,10 +2389,51 @@ html.realizar-ok #realizarSair { display: inline-flex; }
     background: #fff !important;
   }
   body.res-imprimindo #resConsulta > :not(#resRelatorio) { display: none !important; }
+  body.res-imprimindo,
+  body.res-imprimindo.capa-ativa,
+  body.res-imprimindo .capa,
+  body.res-imprimindo .capa-hero,
+  body.res-imprimindo #resRelatorio,
+  body.res-imprimindo #resRelatorio .table-wrap,
+  body.res-imprimindo .res-bloco,
+  body.res-imprimindo .res-medidor,
+  body.res-imprimindo .res-descritores,
+  body.res-imprimindo .res-card {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  body.res-imprimindo .res-respostas-tela { display: none !important; }
+  body.res-imprimindo .res-respostas-print { display: block !important; }
+  body.res-imprimindo .res-respostas-print .res-respostas {
+    overflow: visible !important;
+    break-inside: auto;
+    page-break-inside: auto;
+    margin: 0 0 14px;
+  }
+  body.res-imprimindo .res-respostas-print table {
+    width: 100%;
+    table-layout: fixed;
+    font-size: 11px;
+  }
+  body.res-imprimindo .res-respostas-print th,
+  body.res-imprimindo .res-respostas-print td {
+    padding: 3px 2px;
+  }
+  body.res-imprimindo .res-respostas-print th:first-child,
+  body.res-imprimindo .res-respostas-print td:first-child {
+    width: 28%;
+    padding: 3px 6px;
+    white-space: normal;
+    text-align: left;
+  }
+  body.res-imprimindo .res-respostas-print tr { break-inside: avoid; page-break-inside: avoid; }
+  body.res-imprimindo .res-faixa-questoes { margin: 0 0 4px; font-weight: 700; }
 }
 .res-tabela { width: 100%; border-collapse: collapse; }
 .res-tabela th, .res-tabela td { border-bottom: 1px solid #e4eee8; padding: 6px 8px; text-align: left; }
 .res-tabela th { font-size: 13px; }
+.res-respostas-print { display: none; }
 .res-respostas { overflow-x: auto; }
 .res-respostas th, .res-respostas td { text-align: center; white-space: nowrap; }
 .res-respostas td:first-child, .res-respostas th:first-child { text-align: left; }

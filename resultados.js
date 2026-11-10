@@ -756,18 +756,16 @@
     `;
   }
 
-  function htmlRespostas(qs, alunos) {
-    const lista = [...alunos].sort((a, b) => (a.name || "").localeCompare(b.name || "", "pt-BR"));
-    if (!lista.length || !qs.length) return "";
-    const head = `<tr><th>Aluno</th>${qs.map((_, i) => `<th>Q${i + 1}</th>`).join("")}</tr>`;
-    const body = lista.map((aluno) => {
+  function htmlTabelaRespostas(qs, alunos, inicio) {
+    const head = `<tr><th>Aluno</th>${qs.map((_, i) => `<th>Q${inicio + i + 1}</th>`).join("")}</tr>`;
+    const body = alunos.map((aluno) => {
       const nome = esc(aluno.name || "");
       if (naoFezProva(aluno) || !temRespostaLancada(aluno)) {
         const rotulo = situacao(aluno) || "ND";
         return `<tr><td>${nome}</td><td colspan="${qs.length}">${esc(rotulo)}</td></tr>`;
       }
       const cols = qs.map((q, i) => {
-        const resp = respostaLancada((aluno.answers || [])[i]);
+        const resp = respostaLancada((aluno.answers || [])[inicio + i]);
         if (!resp) return `<td>ND</td>`;
         const texto = esc(resp);
         const correta = q && q.correct != null ? String(q.correct).trim() : "";
@@ -776,9 +774,27 @@
       }).join("");
       return `<tr><td>${nome}</td>${cols}</tr>`;
     }).join("");
+    return `<table class="res-tabela"><thead>${head}</thead><tbody>${body}</tbody></table>`;
+  }
+
+  function htmlRespostas(qs, alunos) {
+    const lista = [...alunos].sort((a, b) => (a.name || "").localeCompare(b.name || "", "pt-BR"));
+    if (!lista.length || !qs.length) return "";
+    const porFolha = 13;
+    const blocos = [];
+    for (let i = 0; i < qs.length; i += porFolha) {
+      const fim = Math.min(i + porFolha, qs.length);
+      blocos.push(`
+        <div class="table-wrap res-respostas">
+          <p class="res-faixa-questoes">Questões ${i + 1} a ${fim}</p>
+          ${htmlTabelaRespostas(qs.slice(i, fim), lista, i)}
+        </div>
+      `);
+    }
     return `
       <h4>Respostas dos alunos</h4>
-      <div class="table-wrap res-respostas"><table class="res-tabela"><thead>${head}</thead><tbody>${body}</tbody></table></div>
+      <div class="table-wrap res-respostas res-respostas-tela">${htmlTabelaRespostas(qs, lista, 0)}</div>
+      <div class="res-respostas-print">${blocos.join("")}</div>
     `;
   }
 
