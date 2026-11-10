@@ -10,7 +10,7 @@
   <script>
     document.documentElement.dataset.tema = localStorage.getItem("avalie-tema") === "dia" ? "dia" : "noite";
   </script>
-  <link rel="stylesheet" href="styles.css?v=eixo35" />
+  <link rel="stylesheet" href="styles.css?v=eixo40" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
 <body class="capa-ativa">
@@ -213,22 +213,28 @@
               <button type="button" id="resSair" class="capa-btn">Sair</button>
             </div>
             <p id="resEscolaFixa" class="res-escola-fixa" hidden></p>
-            <div class="res-grade">
-              <label id="resEscolaBox">Escola
-                <select id="resEscola" aria-label="Escola do relatório"></select>
+            <div class="res-grade res-filtros">
+              <label>Avaliação
+                <select id="resAvaliacao" aria-label="Avaliação do relatório"></select>
               </label>
-              <label>Série
-                <select id="resAno" aria-label="Série da avaliação"></select>
+              <label>Ano escolar
+                <select id="resAno" aria-label="Ano escolar"></select>
               </label>
-              <label>Turma
-                <select id="resTurma" aria-label="Turma ou escola toda"></select>
-              </label>
-              <label>Disciplina
-                <select id="resDisciplina" aria-label="Disciplina do relatório">
-                  <option value="">Selecione a disciplina</option>
-                  <option value="Português">Português</option>
+              <label>Componente curricular
+                <select id="resDisciplina" aria-label="Componente curricular">
+                  <option value="">Selecione</option>
+                  <option value="Português">Língua Portuguesa</option>
                   <option value="Matemática">Matemática</option>
                 </select>
+              </label>
+              <label>Rede
+                <select id="resRede" aria-label="Rede, município ou escola"></select>
+              </label>
+              <label id="resTurmaBox">Turma
+                <select id="resTurma" aria-label="Turma ou escola toda"></select>
+              </label>
+              <label id="resEscolaBox" hidden>Escola
+                <select id="resEscola" aria-label="Escola do relatório"></select>
               </label>
             </div>
             <p id="resLiberacao" class="res-aviso" hidden>O resultado ainda não foi liberado. A avaliação continua em lançamento.</p>
@@ -1380,6 +1386,6 @@
   <script src="acesso.js?v=eixo30"></script>
   <script src="eixo-login.js?v=eixo38"></script>
   <script src="app.js?v=eixo26"></script>
-  <script src="resultados.js?v=eixo38"></script>
+  <script src="resultados.js?v=eixo40"></script>
 </body>
 </html>

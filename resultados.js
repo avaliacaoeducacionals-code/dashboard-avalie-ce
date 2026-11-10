@@ -124,11 +124,19 @@
     if ($("resRelatorio")) $("resRelatorio").innerHTML = "";
   }
 
+  const REDE_MUNICIPIO = "__municipio__";
+
   function escolaEscolhida() {
     if (!sessao) return "";
     if (!sessao.mestre) return sessao.escola || "";
-    const sel = $("resEscola");
-    return sel ? sel.value : "";
+    const sel = $("resRede");
+    const valor = sel ? sel.value : "";
+    if (!valor || valor === REDE_MUNICIPIO) return "";
+    return valor;
+  }
+
+  function recorteMunicipal() {
+    return !!(sessao && sessao.mestre && $("resRede") && $("resRede").value === REDE_MUNICIPIO);
   }
 
   function carregarScript(src) {
@@ -200,9 +208,50 @@
     sel.value = lista.includes(antes) ? antes : "";
   }
 
+  function preencherAvaliacoes() {
+    const sel = $("resAvaliacao");
+    if (!sel) return;
+    const antes = sel.value;
+    const lista = avaliacoesCadastradas();
+    if (!lista.length) {
+      sel.innerHTML = `<option value="">Nenhuma avaliação cadastrada</option>`;
+      sel.value = "";
+      return;
+    }
+    sel.innerHTML = `<option value="">Selecione a avaliação</option>` + lista.map((nome) => (
+      `<option value="${esc(nome)}">${esc(nome)}</option>`
+    )).join("");
+    sel.value = lista.includes(antes) ? antes : "";
+  }
+
+  function preencherRede() {
+    const sel = $("resRede");
+    if (!sel || !sessao) return;
+    if (!sessao.mestre) {
+      const nome = sessao.escola || "";
+      sel.innerHTML = `<option value="${esc(nome)}">${esc(nome)}</option>`;
+      sel.value = nome;
+      sel.disabled = true;
+      return;
+    }
+    sel.disabled = false;
+    const antes = sel.value;
+    const escolas = escolasDaRede();
+    sel.innerHTML = `<option value="">Selecione a rede</option>`
+      + `<option value="${REDE_MUNICIPIO}">Rede municipal</option>`
+      + escolas.map((nome) => `<option value="${esc(nome)}">${esc(nome)}</option>`).join("");
+    const validos = [REDE_MUNICIPIO].concat(escolas);
+    sel.value = validos.includes(antes) ? antes : "";
+  }
+
   function preencherTurmas() {
     const sel = $("resTurma");
     if (!sel) return;
+    atualizarTurmaVisivel();
+    if (recorteMunicipal()) {
+      sel.value = "";
+      return;
+    }
     const antes = sel.value;
     const escola = escolaEscolhida();
     const ano = $("resAno") ? $("resAno").value : "";
@@ -252,10 +301,18 @@
   function atualizarBotao() {
     const btn = $("resGerar");
     if (!btn) return;
+    const avaliacao = $("resAvaliacao") && $("resAvaliacao").value;
     const ano = $("resAno") && $("resAno").value;
     const turma = $("resTurma") && $("resTurma").value;
     const disciplina = $("resDisciplina") && $("resDisciplina").value;
-    btn.disabled = !(escolaEscolhida() && ano && turma && disciplina);
+    const recorte = recorteMunicipal() || (escolaEscolhida() && turma);
+    btn.disabled = !(avaliacao && ano && disciplina && recorte);
+  }
+
+  function atualizarTurmaVisivel() {
+    const box = $("resTurmaBox");
+    if (!box) return;
+    box.hidden = recorteMunicipal();
   }
 
   function limparRelatorio() {
@@ -285,6 +342,7 @@
     }
     if ($("resLogin")) $("resLogin").hidden = true;
     if ($("resConsulta")) $("resConsulta").hidden = false;
+    if ($("resEscolaBox")) $("resEscolaBox").hidden = true;
     const titulo = $("resConsultaTitulo");
     if (titulo) titulo.textContent = sessao.mestre ? "Consulta do relatório" : (sessao.escola || "Consulta do relatório");
     if (!sessao.mestre) {
@@ -307,11 +365,36 @@
       atualizarImpressao();
       return;
     }
-    preencherEscolas();
+    preencherAvaliacoes();
+    preencherRede();
     preencherAno();
     preencherTurmas();
     atualizarBotao();
     atualizarImpressao();
+  }
+
+  function mesmoLancamento(a, b) {
+    if (!a || !b) return false;
+    if (a.alunoId && b.alunoId && String(a.alunoId) === String(b.alunoId)) return true;
+    const nome = fold(a.name || a.nome);
+    return !!nome && nome === fold(b.name || b.nome);
+  }
+
+  function alunosDoRelatorio(anoObj, slot) {
+    const vivo = Array.isArray(anoObj && anoObj.students) ? anoObj.students : [];
+    const foto = slot && Array.isArray(slot.students) ? slot.students : null;
+    if (!foto) return vivo;
+    const usados = new Set();
+    const lista = foto.map((aluno) => {
+      const outro = vivo.find((item) => mesmoLancamento(aluno, item));
+      if (outro) usados.add(outro);
+      if (temRespostaLancada(aluno) || !temRespostaLancada(outro)) return aluno;
+      return Object.assign({}, aluno, { answers: outro.answers });
+    });
+    vivo.forEach((aluno) => {
+      if (!usados.has(aluno)) lista.push(aluno);
+    });
+    return lista;
   }
 
   function anoDoRelatorio(pack, ano) {
@@ -319,7 +402,11 @@
     const nome = String(anoObj.nome || "").trim();
     const slot = nome && anoObj.porAvaliacao && anoObj.porAvaliacao[nome];
     if (!slot || typeof slot !== "object") return anoObj;
-    return Object.assign({}, anoObj, slot, { nome: nome, porAvaliacao: anoObj.porAvaliacao });
+    return Object.assign({}, anoObj, slot, {
+      nome: nome,
+      porAvaliacao: anoObj.porAvaliacao,
+      students: alunosDoRelatorio(anoObj, slot),
+    });
   }
 
   function lerPack() {
@@ -371,11 +458,28 @@
     return { nomes, ids, total: Math.max(nominais.length, ids.size) };
   }
 
-  function lancamentosDe(pack, ano, disciplina, roster) {
-    const anoObj = anoDoRelatorio(pack, ano);
-    if (!anoObj) return [];
+  function slotDaAvaliacao(pack, ano, nome) {
+    const anoObj = pack && pack.anos && pack.anos[ano] ? pack.anos[ano] : {};
+    const pedido = String(nome || "").trim();
+    const nomeAno = String(anoObj.nome || "").trim();
+    const mapa = anoObj.porAvaliacao;
+    const slot = pedido && mapa && mapa[pedido];
+    const vivo = nomeAno === pedido ? anoObj : { students: [] };
+    if (slot && typeof slot === "object") {
+      return Object.assign({}, anoObj, slot, {
+        nome: pedido,
+        porAvaliacao: mapa,
+        students: alunosDoRelatorio(vivo, slot),
+      });
+    }
+    if (nomeAno === pedido) return anoObj;
+    return null;
+  }
+
+  function lancamentosNo(slot, pack, disciplina, roster) {
+    if (!slot) return [];
     const port = disciplinaPorNome(pack, "Português");
-    return (anoObj.students || []).filter((aluno) => {
+    return (slot.students || []).filter((aluno) => {
       const daTurma = (aluno.alunoId && roster.ids.has(String(aluno.alunoId))) || roster.nomes.has(fold(aluno.name));
       if (!daTurma) return false;
       if (aluno.disciplinaId) return aluno.disciplinaId === disciplina.id;
@@ -383,15 +487,103 @@
     });
   }
 
+  function escalasDe(slot) {
+    const lista = slot && Array.isArray(slot.escalas) ? slot.escalas : [];
+    const xs = lista
+      .filter((s) => s && s.nome && Number.isFinite(Number(s.min)) && Number.isFinite(Number(s.max)))
+      .map((s) => ({ nome: String(s.nome), min: Number(s.min), max: Number(s.max) }))
+      .sort((a, b) => a.min - b.min);
+    if (xs.length) return xs;
+    return [
+      { nome: "Crítico", min: 0, max: 30 },
+      { nome: "Básico", min: 31, max: 60 },
+      { nome: "Adequado", min: 61, max: 100 },
+    ];
+  }
+
+  function corNivel(indice, total) {
+    const cores = ["#f39a3e", "#f2c94c", "#7b6fe0"];
+    if (total <= 1) return cores[2];
+    if (indice <= 0) return cores[0];
+    if (indice >= total - 1) return cores[2];
+    return cores[1];
+  }
+
+  function fmtNum(n) {
+    const r = Math.round(n * 10) / 10;
+    return Number.isInteger(r) ? String(r) : r.toFixed(1);
+  }
+
+  function faixaDeNota(nota, faixas) {
+    let indice = faixas.findIndex((s) => nota >= s.min && nota <= s.max);
+    if (indice >= 0) return indice;
+    faixas.forEach((s, i) => { if (s.max < nota) indice = i; });
+    return indice;
+  }
+
+  function medirAvaliacao(pack, nome, ano, disciplina) {
+    const slot = slotDaAvaliacao(pack, ano, nome);
+    const qs = slot ? questoesDe(slot, disciplina, pack) : [];
+    const escalas = escalasDe(slot);
+    const escolas = recorteMunicipal() ? escolasDaRede() : [escolaEscolhida()].filter(Boolean);
+    const turmaSel = $("resTurma") ? $("resTurma").value : "";
+    let alunos = [];
+    let rosterTotal = 0;
+    escolas.forEach((escola) => {
+      let turmas = [];
+      if (recorteMunicipal() || turmaSel === TURMA_TODA) turmas = turmasDa(escola, ano);
+      else if (turmaSel) turmas = [turmaSel];
+      turmas.forEach((nomeTurma) => {
+        const roster = rosterDaTurma(pack, escola, ano, nomeTurma);
+        rosterTotal += roster.total;
+        alunos = alunos.concat(lancamentosNo(slot, pack, disciplina, roster));
+      });
+    });
+    const presentes = alunos.filter(entraNaMedia);
+    const notas = presentes.map((aluno) => notaDe(aluno, qs)).filter((n) => n != null);
+    const media = notas.length ? notas.reduce((s, n) => s + n, 0) / notas.length : null;
+    const contagens = escalas.map(() => 0);
+    notas.forEach((nota) => {
+      const indice = faixaDeNota(nota, escalas);
+      if (indice >= 0) contagens[indice] += 1;
+    });
+    const ausencia = rosterTotal > 0 ? (Math.max(0, rosterTotal - presentes.length) / rosterTotal) * 100 : null;
+    return { nome, qs, escalas, alunos, presentes, notas, media, contagens, rosterTotal, ausencia };
+  }
+
   function situacao(aluno) {
     const s = aluno && aluno.situacao;
     return SITUACOES.includes(s) ? s : "";
   }
 
+  function respostaLancada(valor) {
+    if (valor == null) return "";
+    const texto = String(valor).trim();
+    if (!texto || texto === "-") return "";
+    return texto;
+  }
+
+  function temRespostaLancada(aluno) {
+    return (aluno && Array.isArray(aluno.answers) ? aluno.answers : []).some((item) => respostaLancada(item));
+  }
+
+  function naoFezProva(aluno) {
+    const s = situacao(aluno);
+    return s === "Falta" || s === "Transferência";
+  }
+
+  function entraNaMedia(aluno) {
+    return !!aluno && !naoFezProva(aluno) && temRespostaLancada(aluno);
+  }
+
   function notaDe(aluno, qs) {
-    if (!qs.length) return null;
+    if (!qs.length || !entraNaMedia(aluno)) return null;
     let certos = 0;
-    qs.forEach((q, i) => { if ((aluno.answers || [])[i] === q.correct) certos += 1; });
+    qs.forEach((q, i) => {
+      const resp = respostaLancada((aluno.answers || [])[i]);
+      const correta = q && q.correct != null ? String(q.correct).trim() : "";
+      if (resp && correta && resp === correta) certos += 1;
+    });
     return (100 * certos) / qs.length;
   }
 
@@ -409,10 +601,11 @@
 
   function textoAluno(aluno, qs, escalas) {
     if (!aluno) return "Sem lançamento";
-    const sit = situacao(aluno);
-    if (sit) return sit;
+    if (naoFezProva(aluno)) return situacao(aluno);
+    if (!temRespostaLancada(aluno)) return situacao(aluno) || "ND";
     if (!qs.length) return "Sem gabarito";
     const nota = notaDe(aluno, qs);
+    if (nota == null) return "ND";
     return `${nota.toFixed(1)}% · ${nivelDe(nota, escalas)}`;
   }
 
@@ -424,7 +617,7 @@
       else if (qs.length) aviso = `${qs.length} questões. Ainda não há lançamento desta disciplina.`;
       return `<section class="res-bloco">${titulo}<p class="res-aviso">${esc(aviso)}</p></section>`;
     }
-    const presentesLista = alunos.filter((aluno) => !situacao(aluno));
+    const presentesLista = alunos.filter(entraNaMedia);
     const presentes = presentesLista.length;
     const ausencia = rosterTotal > 0 ? (Math.max(0, rosterTotal - presentes) / rosterTotal) * 100 : null;
     const notas = presentesLista.map((aluno) => notaDe(aluno, qs)).filter((n) => n != null);
@@ -451,14 +644,16 @@
     const head = `<tr><th>Aluno</th>${qs.map((_, i) => `<th>Q${i + 1}</th>`).join("")}</tr>`;
     const body = lista.map((aluno) => {
       const nome = esc(aluno.name || "");
-      const sit = situacao(aluno);
-      if (sit) return `<tr><td>${nome}</td><td colspan="${qs.length}">${esc(sit)}</td></tr>`;
+      if (naoFezProva(aluno) || !temRespostaLancada(aluno)) {
+        const rotulo = situacao(aluno) || "ND";
+        return `<tr><td>${nome}</td><td colspan="${qs.length}">${esc(rotulo)}</td></tr>`;
+      }
       const cols = qs.map((q, i) => {
-        const resp = (aluno.answers || [])[i];
-        const vazio = resp == null || resp === "" || resp === "-";
-        if (vazio) return `<td>—</td>`;
-        const texto = esc(String(resp));
-        const certa = String(resp) === String(q.correct);
+        const resp = respostaLancada((aluno.answers || [])[i]);
+        if (!resp) return `<td>ND</td>`;
+        const texto = esc(resp);
+        const correta = q && q.correct != null ? String(q.correct).trim() : "";
+        const certa = !!correta && resp === correta;
         return `<td class="${certa ? "res-certa" : "res-errada"}">${texto}</td>`;
       }).join("");
       return `<tr><td>${nome}</td>${cols}</tr>`;
@@ -497,52 +692,136 @@
     `;
   }
 
+  function htmlDelta(atual, anterior) {
+    if (atual == null || anterior == null) return "";
+    const dif = Math.round((atual - anterior) * 10) / 10;
+    if (dif === 0) return `<span class="res-delta">0 pts</span>`;
+    const sobe = dif > 0;
+    const abs = Math.abs(dif);
+    const texto = Number.isInteger(abs) ? String(abs) : abs.toFixed(1);
+    return `<span class="res-delta${sobe ? "" : " desce"}">${sobe ? "↑" : "↓"} ${texto} pts</span>`;
+  }
+
+  function htmlMedidor(medicao, deltaHtml, comparado, indice) {
+    const gid = "resGauge" + indice;
+    const media = medicao.media;
+    const ang = media == null ? -90 : (Math.max(0, Math.min(100, media)) / 100) * 180 - 90;
+    const nota = media == null ? "—" : fmtNum(media);
+    const total = medicao.notas.length;
+    const segmentos = medicao.escalas.map((faixa, i) => {
+      const n = medicao.contagens[i] || 0;
+      const pct = total ? (100 * n) / total : 0;
+      return { nome: faixa.nome, n, pct, cor: corNivel(i, medicao.escalas.length) };
+    });
+    const barra = total
+      ? `<div class="res-barra">${segmentos.map((s) => `<i style="width:${s.pct}%;background:${s.cor}"></i>`).join("")}</div>`
+      : `<p class="res-aviso">Sem respostas lançadas para distribuir.</p>`;
+    const legenda = segmentos.map((s) => `
+      <div class="res-leg-nome"><i style="background:${s.cor}"></i>${esc(s.nome)}<small>${s.n} estudante(s)</small></div>
+      <div class="res-leg-pct">${total ? fmtNum(s.pct) + "%" : "—"}</div>
+    `).join("");
+    const ponteiro = media == null ? "" : `
+      <g transform="rotate(${ang} 100 102)"><polygon points="100,30 96.5,102 103.5,102" fill="#1c2434"/></g>
+      <circle cx="100" cy="102" r="5" fill="#1c2434"/>
+    `;
+    const ausencia = medicao.ausencia == null ? "—" : `${fmtNum(medicao.ausencia)}%`;
+    const nivel = media == null ? "—" : nivelDe(media, medicao.escalas);
+    return `
+      <article class="res-medidor res-bloco${comparado ? " comparado" : ""}">
+        <h3>${esc(medicao.nome)}</h3>
+        <p class="res-prof">Proficiência média</p>
+        <svg class="res-gauge" viewBox="0 0 200 122" role="img" aria-label="${esc(medicao.nome)} ${esc(nota)}">
+          <defs>
+            <linearGradient id="${gid}" x1="0" y1="1" x2="1" y2="1">
+              <stop offset="0%" stop-color="#f39a3e"/>
+              <stop offset="48%" stop-color="#f2c94c"/>
+              <stop offset="100%" stop-color="#7b6fe0"/>
+            </linearGradient>
+          </defs>
+          <path d="M18 102 A82 82 0 0 1 182 102" fill="none" stroke="url(#${gid})" stroke-width="18"/>
+          <text x="6" y="118" font-size="11" fill="#667085">0</text>
+          <text x="168" y="118" font-size="11" fill="#667085">100</text>
+          ${ponteiro}
+        </svg>
+        <p class="res-nota">${esc(nota)}</p>
+        ${deltaHtml ? `<p class="res-delta-linha">${deltaHtml}</p>` : ""}
+        <h4>Distribuição por níveis de aprendizagem</h4>
+        ${barra}
+        <div class="res-legenda">${legenda}</div>
+        <p class="res-presenca">Presentes ${medicao.presentes.length} · Ausência ${ausencia} · Nível ${esc(nivel)}</p>
+      </article>
+    `;
+  }
+
+  function htmlAbas() {
+    const municipal = recorteMunicipal();
+    const escola = escolaEscolhida();
+    const botoes = [];
+    if (sessao && sessao.mestre) {
+      botoes.push(`<button type="button" class="res-aba${municipal ? " ativa" : ""}" data-res-aba="municipio">Município</button>`);
+      if (escola) botoes.push(`<button type="button" class="res-aba${!municipal ? " ativa" : ""}" data-res-aba="rede" data-escola="${esc(escola)}">Rede</button>`);
+    } else if (escola) {
+      botoes.push(`<button type="button" class="res-aba ativa" data-res-aba="rede" data-escola="${esc(escola)}">Rede</button>`);
+    }
+    if (!botoes.length) return "";
+    return `<div class="res-abas" role="tablist">${botoes.join("")}</div>`;
+  }
+
+  function parComparavel(pack, ano, disciplina, escolhida) {
+    const nomes = avaliacoesCadastradas();
+    const comDado = nomes.filter((nome) => {
+      const med = medirAvaliacao(pack, nome, ano, disciplina);
+      return med.media != null;
+    });
+    if (!comDado.includes(escolhida) || comDado.length < 2) return [escolhida];
+    const idx = nomes.indexOf(escolhida);
+    let outra = "";
+    for (let i = idx - 1; i >= 0; i -= 1) {
+      if (comDado.includes(nomes[i])) { outra = nomes[i]; break; }
+    }
+    if (!outra) {
+      for (let i = idx + 1; i < nomes.length; i += 1) {
+        if (comDado.includes(nomes[i])) { outra = nomes[i]; break; }
+      }
+    }
+    return [outra, escolhida].filter(Boolean).sort((a, b) => nomes.indexOf(a) - nomes.indexOf(b));
+  }
+
   function gerarRelatorio() {
     if (!aplicarLiberacao()) return;
-    const escola = escolaEscolhida();
+    const escolhida = $("resAvaliacao") ? $("resAvaliacao").value : "";
     const ano = $("resAno") ? $("resAno").value : "";
     const turma = $("resTurma") ? $("resTurma").value : "";
     const disciplinaNome = $("resDisciplina") ? $("resDisciplina").value : "";
     const box = $("resRelatorio");
     if (!box) return;
-    if (!escola || !ano || !turma || !disciplinaNome) {
+    const recorteOk = recorteMunicipal() || (escolaEscolhida() && turma);
+    if (!escolhida || !ano || !disciplinaNome || !recorteOk) {
       limparRelatorio();
       return;
     }
     const pack = lerPack();
-    const anoObj = anoDoRelatorio(pack, ano);
-    const escalas = Array.isArray(anoObj.escalas) && anoObj.escalas.length ? anoObj.escalas : [
-      { nome: "Crítico", min: 0, max: 30 },
-      { nome: "Básico", min: 31, max: 60 },
-      { nome: "Adequado", min: 61, max: 100 },
-    ];
     const disciplina = disciplinaPorNome(pack, disciplinaNome);
-    const qs = questoesDe(anoObj, disciplina, pack);
-    const turmas = turma === TURMA_TODA ? turmasDa(escola, ano) : [turma];
-    const rotuloTurma = turma === TURMA_TODA ? "Escola toda" : turma;
-    const titulo = `Resultado — ${ano} ano — ${escola} — ${rotuloTurma} — ${disciplina.nome}`;
-    if (turma === TURMA_TODA && !turmas.length) {
-      box.innerHTML = `
-        <h2>${esc(titulo)}</h2>
-        <p class="res-aviso">Não há turma lançada nesta série.</p>
-      `;
-      atualizarImpressao();
-      return;
-    }
-    const blocos = turmas.map((nomeTurma) => {
-      const roster = rosterDaTurma(pack, escola, ano, nomeTurma);
-      const alunos = lancamentosDe(pack, ano, disciplina, roster);
-      return { nomeTurma, roster, alunos };
-    });
-    const miolo = turma === TURMA_TODA
-      ? blocos.map((b) => `<h3>Turma ${esc(b.nomeTurma)}</h3>${htmlBloco(disciplina, qs, b.alunos, b.roster.total, escalas)}`).join("")
-      : htmlBloco(disciplina, qs, blocos[0].alunos, blocos[0].roster.total, escalas);
-    const lista = htmlLista(blocos.map((b) => ({ disciplina, qs, alunos: b.alunos })), escalas);
+    const nomes = parComparavel(pack, ano, disciplina, escolhida);
+    const medicoes = nomes.map((nome) => medirAvaliacao(pack, nome, ano, disciplina));
+    const cartoes = medicoes.map((med, i) => {
+      const anterior = i > 0 ? medicoes[i - 1].media : null;
+      const delta = i > 0 && med.media != null && anterior != null ? htmlDelta(med.media, anterior) : "";
+      return htmlMedidor(med, delta, i > 0, i);
+    }).join("");
+    const detalhes = medicoes.map((med) => `
+      <section class="res-detalhe">
+        <h3>${esc(med.nome)}</h3>
+        ${htmlBloco(disciplina, med.qs, med.alunos, med.rosterTotal, med.escalas)}
+        ${htmlLista([{ disciplina, qs: med.qs, alunos: med.alunos }], med.escalas)}
+      </section>
+    `).join("");
+    const recorte = recorteMunicipal() ? "Rede municipal" : `${escolaEscolhida()} · ${turma === TURMA_TODA ? "Escola toda" : turma}`;
     box.innerHTML = `
-      <h2>${esc(titulo)}</h2>
-      <p class="res-aviso">${esc(escola)} · ${esc(rotuloTurma)} · ${esc(disciplina.nome)}</p>
-      ${miolo}
-      ${lista}
+      ${htmlAbas()}
+      <p class="res-aviso">${esc(ano)} ano · ${esc(disciplina.nome)} · ${esc(recorte)}</p>
+      <div class="res-painel-cards">${cartoes}</div>
+      ${detalhes}
     `;
     atualizarImpressao();
   }
@@ -606,15 +885,31 @@
     if (gerar) gerar.addEventListener("click", gerarRelatorio);
     const imprimir = $("resImprimir");
     if (imprimir) imprimir.addEventListener("click", imprimirRelatorio);
-    ["resEscola", "resAno", "resTurma", "resDisciplina"].forEach((id) => {
+    ["resAvaliacao", "resRede", "resAno", "resTurma", "resDisciplina"].forEach((id) => {
       const el = $(id);
       if (!el) return;
       el.addEventListener("change", () => {
-        if (id === "resEscola" || id === "resAno") preencherTurmas();
+        if (id === "resRede" || id === "resAno") preencherTurmas();
         limparRelatorio();
         atualizarBotao();
       });
     });
+    const relatorio = $("resRelatorio");
+    if (relatorio) {
+      relatorio.addEventListener("click", (ev) => {
+        const aba = ev.target.closest("[data-res-aba]");
+        if (!aba || !sessao || !sessao.mestre) return;
+        const rede = $("resRede");
+        if (!rede) return;
+        if (aba.dataset.resAba === "municipio") rede.value = REDE_MUNICIPIO;
+        else if (aba.dataset.escola) rede.value = aba.dataset.escola;
+        preencherTurmas();
+        limparRelatorio();
+        atualizarBotao();
+        const gerar = $("resGerar");
+        if (gerar && !gerar.disabled) gerarRelatorio();
+      });
+    }
     const abrir = $("abrirResultadosCapa");
     if (abrir) abrir.addEventListener("click", pedirSenha);
     mostrarLogin();
