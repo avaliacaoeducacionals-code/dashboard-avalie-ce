@@ -476,6 +476,26 @@
     return null;
   }
 
+  function lancamentosUnicos(lista) {
+    const ids = new Set();
+    const nomes = new Set();
+    const manter = new Set();
+    for (let i = lista.length - 1; i >= 0; i -= 1) {
+      const aluno = lista[i];
+      const id = aluno && aluno.alunoId ? String(aluno.alunoId) : "";
+      const nome = fold((aluno && (aluno.name || aluno.nome)) || "");
+      if (!id && !nome) {
+        manter.add(i);
+        continue;
+      }
+      if ((id && ids.has(id)) || (nome && nomes.has(nome))) continue;
+      manter.add(i);
+      if (id) ids.add(id);
+      if (nome) nomes.add(nome);
+    }
+    return lista.filter((_, i) => manter.has(i));
+  }
+
   function lancamentosNo(slot, pack, disciplina, roster) {
     if (!slot) return [];
     const port = disciplinaPorNome(pack, "Português");
@@ -632,6 +652,7 @@
         alunos = alunos.concat(lancamentosNo(slot, pack, disciplina, roster));
       });
     });
+    alunos = lancamentosUnicos(alunos);
     const presentes = alunos.filter(entraNaMedia);
     const notas = presentes.map((aluno) => notaDe(aluno, qs)).filter((n) => n != null);
     const media = notas.length ? notas.reduce((s, n) => s + n, 0) / notas.length : null;
