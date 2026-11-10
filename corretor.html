@@ -20,7 +20,7 @@
     html:not(.realizar-login) #realizarLogin,
     html.realizar-ok #realizarLogin { display: none !important; }
   </style>
-  <link rel="stylesheet" href="styles.css?v=eixo32" />
+  <link rel="stylesheet" href="styles.css?v=eixo42" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
 <body class="corretor-solo">
@@ -184,11 +184,11 @@
           <input id="crNQuest" type="number" min="1" max="60" value="10" />
         </label>
       </div>
-    </article>
-    <article class="card corretor-card">
-      <h2>2. Escalas de proficiência</h2>
+      <h3>Classifique as categorias</h3>
+      <p class="hint">Informe o nome, a cor e a faixa em percentual. Os acertos são calculados pelo número de questões desta avaliação.</p>
+      <div id="crEscalaMedidor" class="cr-escala-medidor"></div>
       <div id="crEscalas"></div>
-      <button type="button" id="crAddEscala" class="btn-compare">Adicionar nível</button>
+      <button type="button" id="crAddEscala" class="btn-compare">Adicionar categoria</button>
     </article>
     <p><button type="button" id="crConfigurar" class="btn-compare">Configurar questões e gabarito</button></p>
     <article class="card corretor-card" id="crGabaritoBox">
@@ -277,6 +277,6 @@
   <script src="dados_rede.js?v=rede1"></script>
   <script src="dados_nominal.js?v=nomes1"></script>
   <script src="acesso.js?v=eixo30"></script>
-  <script src="corretor.js?v=eixo38"></script>
+  <script src="corretor.js?v=eixo42"></script>
 </body>
 </html>

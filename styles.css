@@ -379,7 +379,12 @@ html:not([data-tema="dia"]) select option { color: #e8f2f6; background-color: #1
 @media (max-width: 460px) {
   .corretor-gabarito { grid-template-columns: minmax(0, 1fr); }
 }
-.corretor-escala { display: grid; grid-template-columns: 1.4fr .7fr .7fr auto; gap: 8px; margin-bottom: 8px; align-items: center; }
+.corretor-escala { display: grid; grid-template-columns: 44px minmax(120px, 1.4fr) 72px auto 72px auto auto; gap: 8px; margin-bottom: 8px; align-items: center; }
+.corretor-escala .cr-cor { width: 44px; height: 36px; padding: 2px; border: 1px solid #d0d5dd; border-radius: 8px; background: #fff; }
+.cr-escala-a { color: #667085; font-weight: 700; text-align: center; }
+.cr-acertos { font-weight: 700; color: #344054; white-space: nowrap; }
+.cr-escala-medidor { max-width: 320px; margin: 8px 0 14px; }
+.cr-escala-cortes { margin: 4px 0 0; color: #475467; font-size: 13px; }
 .corretor-situacao-rotulo {
   margin: 10px 0 8px;
   font-weight: 700;

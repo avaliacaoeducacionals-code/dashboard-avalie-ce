@@ -487,26 +487,55 @@
     });
   }
 
-  function escalasDe(slot) {
-    const lista = slot && Array.isArray(slot.escalas) ? slot.escalas : [];
-    const xs = lista
-      .filter((s) => s && s.nome && Number.isFinite(Number(s.min)) && Number.isFinite(Number(s.max)))
-      .map((s) => ({ nome: String(s.nome), min: Number(s.min), max: Number(s.max) }))
-      .sort((a, b) => a.min - b.min);
-    if (xs.length) return xs;
+  function escalasPadrao() {
     return [
-      { nome: "Crítico", min: 0, max: 30 },
-      { nome: "Básico", min: 31, max: 60 },
-      { nome: "Adequado", min: 61, max: 100 },
+      { nome: "Muito crítico", min: 0, max: 38, cor: "#e23b32" },
+      { nome: "Crítico", min: 39, max: 58, cor: "#f39a3e" },
+      { nome: "Intermediário", min: 59, max: 85, cor: "#f2c94c" },
+      { nome: "Adequado", min: 86, max: 100, cor: "#2f9e44" },
     ];
   }
 
-  function corNivel(indice, total) {
-    const cores = ["#f39a3e", "#f2c94c", "#7b6fe0"];
-    if (total <= 1) return cores[2];
-    if (indice <= 0) return cores[0];
-    if (indice >= total - 1) return cores[2];
-    return cores[1];
+  function escalasDe(slot) {
+    const lista = slot && Array.isArray(slot.escalas) ? slot.escalas : [];
+    const antiga = lista.length === 3
+      && lista.map((s) => `${s && s.nome}|${Number(s && s.min)}|${Number(s && s.max)}`).join(";")
+        === "Crítico|0|30;Básico|31|60;Adequado|61|100";
+    const reservas = ["#e23b32", "#f39a3e", "#f2c94c", "#2f9e44"];
+    const base = !lista.length || antiga ? escalasPadrao() : lista;
+    const xs = base
+      .filter((s) => s && s.nome && Number.isFinite(Number(s.min)) && Number.isFinite(Number(s.max)))
+      .map((s) => ({ nome: String(s.nome), min: Number(s.min), max: Number(s.max), cor: String(s.cor || "").trim() }))
+      .sort((a, b) => a.min - b.min)
+      .map((s, i) => ({
+        ...s,
+        cor: /^#[0-9a-fA-F]{6}$/.test(s.cor) ? s.cor : reservas[Math.min(i, reservas.length - 1)],
+      }));
+    return xs.length ? xs : escalasPadrao();
+  }
+
+  function caminhosDoArco(escalas) {
+    const faixas = escalas.filter((s) => s.max > s.min);
+    const ponto = (pct) => {
+      const t = Math.max(0, Math.min(100, Number(pct))) / 100;
+      const theta = Math.PI * (1 - t);
+      return [100 + 82 * Math.cos(theta), 102 - 82 * Math.sin(theta)];
+    };
+    let cursor = 0;
+    return faixas.map((s) => {
+      const min = Number(s.min);
+      const max = Math.min(100, Number(s.max));
+      const comeco = min - cursor <= 1 ? cursor : min;
+      const fim = Math.max(comeco, max);
+      const a = ponto(comeco);
+      const b = ponto(fim);
+      const item = fim - comeco >= 0.2 ? {
+        cor: s.cor,
+        d: `M${a[0].toFixed(1)} ${a[1].toFixed(1)} A82 82 0 0 1 ${b[0].toFixed(1)} ${b[1].toFixed(1)}`,
+      } : null;
+      cursor = Math.max(cursor, fim);
+      return item;
+    }).filter(Boolean);
   }
 
   function fmtNum(n) {
@@ -702,16 +731,21 @@
     return `<span class="res-delta${sobe ? "" : " desce"}">${sobe ? "↑" : "↓"} ${texto} pts</span>`;
   }
 
-  function htmlMedidor(medicao, deltaHtml, comparado, indice) {
-    const gid = "resGauge" + indice;
+  function proficienciaDe(media) {
+    if (media == null) return null;
+    return (Math.round(media * 10) / 10) * 10;
+  }
+
+  function htmlMedidor(medicao, deltaHtml, comparado) {
     const media = medicao.media;
-    const ang = media == null ? -90 : (Math.max(0, Math.min(100, media)) / 100) * 180 - 90;
-    const nota = media == null ? "—" : fmtNum(media);
+    const prof = proficienciaDe(media);
+    const ang = prof == null ? -90 : (Math.max(0, Math.min(1000, prof)) / 1000) * 180 - 90;
+    const nota = prof == null ? "—" : fmtNum(prof);
     const total = medicao.notas.length;
     const segmentos = medicao.escalas.map((faixa, i) => {
       const n = medicao.contagens[i] || 0;
       const pct = total ? (100 * n) / total : 0;
-      return { nome: faixa.nome, n, pct, cor: corNivel(i, medicao.escalas.length) };
+      return { nome: faixa.nome, n, pct, cor: faixa.cor };
     });
     const barra = total
       ? `<div class="res-barra">${segmentos.map((s) => `<i style="width:${s.pct}%;background:${s.cor}"></i>`).join("")}</div>`
@@ -731,16 +765,9 @@
         <h3>${esc(medicao.nome)}</h3>
         <p class="res-prof">Proficiência média</p>
         <svg class="res-gauge" viewBox="0 0 200 122" role="img" aria-label="${esc(medicao.nome)} ${esc(nota)}">
-          <defs>
-            <linearGradient id="${gid}" x1="0" y1="1" x2="1" y2="1">
-              <stop offset="0%" stop-color="#f39a3e"/>
-              <stop offset="48%" stop-color="#f2c94c"/>
-              <stop offset="100%" stop-color="#7b6fe0"/>
-            </linearGradient>
-          </defs>
-          <path d="M18 102 A82 82 0 0 1 182 102" fill="none" stroke="url(#${gid})" stroke-width="18"/>
+          ${caminhosDoArco(medicao.escalas).map((trecho) => `<path d="${trecho.d}" fill="none" stroke="${trecho.cor}" stroke-width="18"/>`).join("")}
           <text x="6" y="118" font-size="11" fill="#667085">0</text>
-          <text x="168" y="118" font-size="11" fill="#667085">100</text>
+          <text x="194" y="118" font-size="11" fill="#667085" text-anchor="end">1000</text>
           ${ponteiro}
         </svg>
         <p class="res-nota">${esc(nota)}</p>
@@ -805,8 +832,9 @@
     const nomes = parComparavel(pack, ano, disciplina, escolhida);
     const medicoes = nomes.map((nome) => medirAvaliacao(pack, nome, ano, disciplina));
     const cartoes = medicoes.map((med, i) => {
-      const anterior = i > 0 ? medicoes[i - 1].media : null;
-      const delta = i > 0 && med.media != null && anterior != null ? htmlDelta(med.media, anterior) : "";
+      const atual = proficienciaDe(med.media);
+      const anterior = i > 0 ? proficienciaDe(medicoes[i - 1].media) : null;
+      const delta = i > 0 && atual != null && anterior != null ? htmlDelta(atual, anterior) : "";
       return htmlMedidor(med, delta, i > 0, i);
     }).join("");
     const detalhes = medicoes.map((med) => `

@@ -52,11 +52,7 @@
       data: "",
       matriculados: "",
       nQuestoes: 10,
-      escalas: [
-        { nome: "Crítico", min: 0, max: 30 },
-        { nome: "Básico", min: 31, max: 60 },
-        { nome: "Adequado", min: 61, max: 100 },
-      ],
+      escalas: escalasPadrao(),
       questions: [],
       students: [],
     };
@@ -790,11 +786,114 @@
     return `<select${idAttr}>${lista.map((op) => `<option value="${op}"${op === atualValor ? " selected" : ""}>${op === "-" ? "—" : op}</option>`).join("")}</select>`;
   }
 
+  function escalasPadrao() {
+    return [
+      { nome: "Muito crítico", min: 0, max: 38, cor: "#e23b32" },
+      { nome: "Crítico", min: 39, max: 58, cor: "#f39a3e" },
+      { nome: "Intermediário", min: 59, max: 85, cor: "#f2c94c" },
+      { nome: "Adequado", min: 86, max: 100, cor: "#2f9e44" },
+    ];
+  }
+
+  function corSegura(cor, reserva) {
+    const texto = String(cor || "").trim();
+    return /^#[0-9a-fA-F]{6}$/.test(texto) ? texto : reserva;
+  }
+
+  function escalasAntigas(lista) {
+    if (!Array.isArray(lista) || lista.length !== 3) return false;
+    const chave = lista.map((s) => `${s && s.nome}|${Number(s && s.min)}|${Number(s && s.max)}`).join(";");
+    return chave === "Crítico|0|30;Básico|31|60;Adequado|61|100";
+  }
+
+  function escalasEmUso(lista) {
+    const reservas = ["#e23b32", "#f39a3e", "#f2c94c", "#2f9e44"];
+    if (!Array.isArray(lista) || !lista.length || escalasAntigas(lista)) return escalasPadrao();
+    return lista
+      .map((s) => ({
+        nome: String(s && s.nome || ""),
+        min: Number(s && s.min),
+        max: Number(s && s.max),
+        cor: String(s && s.cor || ""),
+      }))
+      .filter((s) => Number.isFinite(s.min) && Number.isFinite(s.max))
+      .sort((a, b) => a.min - b.min)
+      .map((s, i) => ({ ...s, cor: corSegura(s.cor, reservas[Math.min(i, reservas.length - 1)]) }));
+  }
+
+  function acertosDaFaixa(percentual, questoes) {
+    const n = Number(questoes);
+    const p = Number(percentual);
+    if (!Number.isFinite(n) || n <= 0 || !Number.isFinite(p)) return null;
+    return Math.round((p / 100) * n);
+  }
+
+  function textoAcertos(percentual, questoes) {
+    const n = acertosDaFaixa(percentual, questoes);
+    if (n == null) return "—";
+    return n === 1 ? "1 acerto" : `${n} acertos`;
+  }
+
+  function caminhosDoArco(escalas) {
+    const faixas = escalasEmUso(escalas).filter((s) => s.max > s.min);
+    const ponto = (pct) => {
+      const t = Math.max(0, Math.min(100, Number(pct))) / 100;
+      const theta = Math.PI * (1 - t);
+      return [100 + 82 * Math.cos(theta), 102 - 82 * Math.sin(theta)];
+    };
+    let cursor = 0;
+    return faixas.map((s) => {
+      const min = Number(s.min);
+      const max = Math.min(100, Number(s.max));
+      const comeco = min - cursor <= 1 ? cursor : min;
+      const fim = Math.max(comeco, max);
+      const desenha = fim - comeco >= 0.2;
+      const a = ponto(comeco);
+      const b = ponto(fim);
+      const item = desenha ? {
+        cor: s.cor,
+        ate: fim,
+        d: `M${a[0].toFixed(1)} ${a[1].toFixed(1)} A82 82 0 0 1 ${b[0].toFixed(1)} ${b[1].toFixed(1)}`,
+      } : null;
+      cursor = Math.max(cursor, fim);
+      return item;
+    }).filter(Boolean);
+  }
+
+  function htmlArcoCategorias(escalas, questoes) {
+    const faixas = escalasEmUso(escalas);
+    const arcos = caminhosDoArco(faixas).map((trecho) => (
+      `<path d="${trecho.d}" fill="none" stroke="${trecho.cor}" stroke-width="18" data-ate="${trecho.ate}"/>`
+    )).join("");
+    const cortes = faixas.map((s) => `${esc(s.nome)} ${textoAcertos(s.max, questoes)}`).join(" · ");
+    return `
+      <svg class="res-gauge" viewBox="0 0 200 122" role="img" aria-label="Medidor de 0 a 1000">
+        ${arcos}
+        <text x="6" y="118" font-size="11" fill="#667085">0</text>
+        <text x="194" y="118" font-size="11" fill="#667085" text-anchor="end">1000</text>
+      </svg>
+      <p class="cr-escala-cortes">${Number(questoes) > 0 ? `${Number(questoes)} questões · ` : ""}${cortes}</p>
+    `;
+  }
+
+  function atualizarMedidorEscalas() {
+    document.querySelectorAll("#crEscalas .corretor-escala").forEach((row) => {
+      const alvo = row.querySelector(".cr-acertos");
+      const max = row.querySelector(".cr-max");
+      if (alvo && max) alvo.textContent = textoAcertos(max.value, lerNumeroQuestoesDoDom(atual()));
+    });
+    const box = $("crEscalaMedidor");
+    if (box) box.innerHTML = htmlArcoCategorias(lerEscalas(), lerNumeroQuestoesDoDom(atual()));
+  }
+
   function lerEscalas() {
-    return [...document.querySelectorAll("#crEscalas .corretor-escala")].map((row) => ({
+    const linhas = [...document.querySelectorAll("#crEscalas .corretor-escala")];
+    if (!linhas.length) return escalasEmUso(atual().escalas);
+    return linhas.map((row) => ({
       nome: row.querySelector(".cr-nome").value.trim(),
       min: Number(row.querySelector(".cr-min").value),
       max: Number(row.querySelector(".cr-max").value),
+      cor: corSegura(row.querySelector(".cr-cor") && row.querySelector(".cr-cor").value, "#f39a3e"),
     }));
   }
 
@@ -1186,15 +1285,21 @@
 
   function pintarEscalas() {
     const box = $("crEscalas");
-    const escalas = atual().escalas.length ? atual().escalas : anoVazio().escalas;
+    const escalas = escalasEmUso(atual().escalas);
+    atual().escalas = JSON.parse(JSON.stringify(escalas));
+    const n = lerNumeroQuestoesDoDom(atual());
     box.innerHTML = escalas.map((s) => `
       <div class="corretor-escala">
-        <input class="cr-nome" type="text" value="${esc(s.nome)}" placeholder="Nome do nível" />
+        <input class="cr-cor" type="color" value="${esc(s.cor)}" aria-label="Cor de ${esc(s.nome || "categoria")}" />
+        <input class="cr-nome" type="text" value="${esc(s.nome)}" placeholder="Nome da categoria" />
         <input class="cr-min" type="number" min="0" max="100" value="${Number.isFinite(Number(s.min)) ? s.min : 0}" aria-label="Percentual mínimo" />
+        <span class="cr-escala-a">a</span>
         <input class="cr-max" type="number" min="0" max="100" value="${Number.isFinite(Number(s.max)) ? s.max : 0}" aria-label="Percentual máximo" />
+        <span class="cr-acertos">${textoAcertos(s.max, n)}</span>
         <button type="button" class="btn-compare corretor-excluir cr-remover-escala">Excluir</button>
       </div>
     `).join("");
+    atualizarMedidorEscalas();
   }
 
   function pintarGabarito() {
@@ -1737,6 +1842,7 @@
     salvar();
     pintarGabarito();
     pintarAlunos();
+    atualizarMedidorEscalas();
   }
 
   function salvarGabarito() {
@@ -2931,7 +3037,7 @@
     if ($("crNome")) $("crNome").addEventListener("change", aoEscolherAvaliacao);
     $("crAddEscala").addEventListener("click", () => {
       gravarFormulario();
-      atual().escalas.push({ nome: "", min: 0, max: 0 });
+      atual().escalas.push({ nome: "", min: 0, max: 0, cor: "#7b6fe0" });
       pintarEscalas();
     });
     $("crEscalas").addEventListener("click", (ev) => {
@@ -2943,6 +3049,8 @@
       salvar();
       pintarEscalas();
     });
+    $("crEscalas").addEventListener("input", atualizarMedidorEscalas);
+    $("crNQuest").addEventListener("input", atualizarMedidorEscalas);
     $("crEscalas").addEventListener("change", () => { gravarFormulario(); salvar(); });
     $("crConfigurar").addEventListener("click", configurarQuestoes);
     $("crGabarito").addEventListener("change", (ev) => {
