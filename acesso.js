@@ -157,9 +157,9 @@ window.ACESSO_ESCOLAS = [
   }
 ];
 
-/* A chave mestra, depois de conferida, abre Eixo, Resultados e Realizar a avaliação. */
+/* A chave mestra, depois de conferida, abre Eixo, Resultados, Realizar a avaliação e Material pedagógico. */
 (function () {
-  const CHAVES = ["avalie-mestre", "avalie-eixo-mestre", "avalie-resultados", "avalie-realizar"];
+  const CHAVES = ["avalie-mestre", "avalie-eixo-mestre", "avalie-resultados", "avalie-realizar", "avalie-material"];
 
   function itemMestre(login) {
     const chave = String(login || "").trim().toLowerCase();

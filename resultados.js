@@ -748,7 +748,7 @@
     return htmlMarcaNivel(nota, escalas);
   }
 
-  function htmlBloco(disciplina, qs, alunos, rosterTotal, escalas) {
+  function htmlBloco(disciplina, qs, alunos, rosterTotal, escalas, ano) {
     const titulo = `<h3>${esc(disciplina.nome)}</h3>`;
     if (!qs.length || !alunos.length) {
       let aviso = "Ainda não há lançamento desta disciplina.";
@@ -772,13 +772,25 @@
           <div class="res-kpi"><span>Média</span><strong>${fmt(media)}</strong></div>
           <div class="res-kpi"><span>Nível</span><strong>${media == null ? "—" : htmlMarcaNivel(media, escalas)}</strong></div>
         </div>
-        ${htmlRespostas(qs, alunos)}
+        ${htmlRespostas(qs, alunos, ano, disciplina.nome)}
       </section>
     `;
   }
 
-  function htmlTabelaRespostas(qs, alunos, inicio) {
-    const head = `<tr><th>Aluno</th>${qs.map((_, i) => `<th>Q${inicio + i + 1}</th>`).join("")}</tr>`;
+  function htmlLinhaDescritores(qs, ano, disciplinaNome) {
+    const infos = qs.map((q) => textoDoDescritor(q, ano, disciplinaNome));
+    if (!infos.some(Boolean)) return "";
+    const cols = infos.map((info) => {
+      if (!info) return `<th class="res-desc-cel"></th>`;
+      const codigo = info.cod ? `<b>${esc(info.cod)}</b>` : "";
+      const nome = info.nome && info.nome !== info.cod ? `<small>${esc(info.nome)}</small>` : "";
+      return `<th class="res-desc-cel">${codigo}${nome}</th>`;
+    }).join("");
+    return `<tr class="res-desc-linha"><th class="res-desc-cel">Descritor</th>${cols}</tr>`;
+  }
+
+  function htmlTabelaRespostas(qs, alunos, inicio, ano, disciplinaNome) {
+    const head = `<tr><th>Aluno</th>${qs.map((_, i) => `<th>Q${inicio + i + 1}</th>`).join("")}</tr>${htmlLinhaDescritores(qs, ano, disciplinaNome)}`;
     const body = alunos.map((aluno) => {
       const nome = esc(aluno.name || "");
       if (naoFezProva(aluno) || !temRespostaLancada(aluno)) {
@@ -798,7 +810,7 @@
     return `<table class="res-tabela"><thead>${head}</thead><tbody>${body}</tbody></table>`;
   }
 
-  function htmlRespostas(qs, alunos) {
+  function htmlRespostas(qs, alunos, ano, disciplinaNome) {
     const lista = [...alunos].sort((a, b) => (a.name || "").localeCompare(b.name || "", "pt-BR"));
     if (!lista.length || !qs.length) return "";
     const porFolha = 13;
@@ -808,13 +820,13 @@
       blocos.push(`
         <div class="table-wrap res-respostas">
           <p class="res-faixa-questoes">Questões ${i + 1} a ${fim}</p>
-          ${htmlTabelaRespostas(qs.slice(i, fim), lista, i)}
+          ${htmlTabelaRespostas(qs.slice(i, fim), lista, i, ano, disciplinaNome)}
         </div>
       `);
     }
     return `
       <h4>Respostas dos alunos</h4>
-      <div class="table-wrap res-respostas res-respostas-tela">${htmlTabelaRespostas(qs, lista, 0)}</div>
+      <div class="table-wrap res-respostas res-respostas-tela">${htmlTabelaRespostas(qs, lista, 0, ano, disciplinaNome)}</div>
       <div class="res-respostas-print">${blocos.join("")}</div>
     `;
   }
@@ -1014,7 +1026,7 @@
     const detalhes = medicoes.map((med) => `
       <section class="res-detalhe">
         <h3>${esc(med.nome)}</h3>
-        ${htmlBloco(disciplina, med.qs, med.alunos, med.rosterTotal, med.escalas)}
+        ${htmlBloco(disciplina, med.qs, med.alunos, med.rosterTotal, med.escalas, ano)}
         ${htmlLista([{ disciplina, qs: med.qs, alunos: med.alunos }], med.escalas)}
       </section>
     `).join("");
@@ -1115,6 +1127,7 @@
     }
     const abrir = $("abrirResultadosCapa");
     if (abrir) abrir.addEventListener("click", pedirSenha);
+    ligarMaterial();
     mostrarLogin();
   }
 
@@ -1126,6 +1139,109 @@
     mostrarLogin();
     const campo = $("resLoginCampo");
     if (campo) campo.focus();
+  }
+
+  const CHAVE_MATERIAL = "avalie-material";
+  let materialMestre = false;
+  const MATERIAIS = {
+    apostilas: {
+      titulo: "Apostilas SME",
+      texto: "As apostilas da SME ainda serão colocadas aqui.",
+    },
+    banco: {
+      titulo: "Banco de questões",
+      texto: "O banco de questões ainda será colocado aqui.",
+    },
+  };
+
+  function mostrarLoginMaterial() {
+    if ($("matLogin")) $("matLogin").hidden = false;
+    if ($("matOpcoes")) $("matOpcoes").hidden = true;
+    if ($("matPagina")) $("matPagina").hidden = true;
+  }
+
+  function mostrarOpcoesMaterial() {
+    if ($("matLogin")) $("matLogin").hidden = true;
+    if ($("matOpcoes")) $("matOpcoes").hidden = false;
+    if ($("matPagina")) $("matPagina").hidden = true;
+  }
+
+  function abrirPaginaMaterial(chave) {
+    const item = MATERIAIS[chave];
+    if (!item) return;
+    if ($("matPaginaTitulo")) $("matPaginaTitulo").textContent = item.titulo;
+    if ($("matPaginaTexto")) $("matPaginaTexto").textContent = item.texto;
+    if ($("matOpcoes")) $("matOpcoes").hidden = true;
+    if ($("matPagina")) $("matPagina").hidden = false;
+  }
+
+  function pedirSenhaMaterial() {
+    try { sessionStorage.removeItem(CHAVE_MATERIAL); } catch (e) { /* pede a senha de novo */ }
+    if ($("matSenhaCampo")) $("matSenhaCampo").value = "";
+    if ($("matErro")) $("matErro").textContent = "";
+    mostrarLoginMaterial();
+  }
+
+  async function entrarMaterial(ev) {
+    ev.preventDefault();
+    const loginEl = $("matLoginCampo");
+    const senhaEl = $("matSenhaCampo");
+    const erro = $("matErro");
+    const botao = ev.currentTarget.querySelector("button[type='submit']");
+    const login = loginEl ? loginEl.value.trim() : "";
+    const senha = senhaEl ? senhaEl.value.trim() : "";
+    if (erro) erro.textContent = "";
+    if (!login || !senha) {
+      if (erro) erro.textContent = "Informe o login e a senha.";
+      return;
+    }
+    if (botao) botao.disabled = true;
+    try {
+      const item = buscarLogin(login);
+      const hash = await hashSenha(senha);
+      const esperado = item && item.senhaHash ? String(item.senhaHash).toLowerCase() : "";
+      if (!item || hash !== esperado) {
+        if (erro) erro.textContent = "Login ou senha incorretos.";
+        return;
+      }
+      materialMestre = !!item.mestre;
+      if (item.mestre && window.gravarSessaoMestre) window.gravarSessaoMestre(item.login);
+      else sessionStorage.setItem(CHAVE_MATERIAL, JSON.stringify({ login: item.login, escola: item.escola || "" }));
+      if (senhaEl) senhaEl.value = "";
+      mostrarOpcoesMaterial();
+    } finally {
+      if (botao) botao.disabled = false;
+    }
+  }
+
+  function sairMaterial() {
+    if (materialMestre && window.sairSessaoMestre) window.sairSessaoMestre();
+    else {
+      try { sessionStorage.removeItem(CHAVE_MATERIAL); } catch (e) { /* volta ao login */ }
+    }
+    materialMestre = false;
+    if ($("matSenhaCampo")) $("matSenhaCampo").value = "";
+    if ($("matLoginCampo")) $("matLoginCampo").value = "";
+    if ($("matErro")) $("matErro").textContent = "";
+    mostrarLoginMaterial();
+  }
+
+  function ligarMaterial() {
+    const form = $("matLogin");
+    if (!form || form.dataset.ligado) return;
+    form.dataset.ligado = "1";
+    form.addEventListener("submit", entrarMaterial);
+    const sair = $("matSair");
+    if (sair) sair.addEventListener("click", sairMaterial);
+    const abrir = $("abrirMaterialCapa");
+    if (abrir) abrir.addEventListener("click", pedirSenhaMaterial);
+    const apostilas = $("matApostilas");
+    if (apostilas) apostilas.addEventListener("click", () => abrirPaginaMaterial("apostilas"));
+    const banco = $("matBanco");
+    if (banco) banco.addEventListener("click", () => abrirPaginaMaterial("banco"));
+    const voltar = $("matPaginaVoltar");
+    if (voltar) voltar.addEventListener("click", mostrarOpcoesMaterial);
+    mostrarLoginMaterial();
   }
 
     window.addEventListener("storage", (ev) => {

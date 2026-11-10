@@ -10,7 +10,7 @@
   <script>
     document.documentElement.dataset.tema = localStorage.getItem("avalie-tema") === "dia" ? "dia" : "noite";
   </script>
-  <link rel="stylesheet" href="styles.css?v=eixo47" />
+  <link rel="stylesheet" href="styles.css?v=eixo48" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
 <body class="capa-ativa">
@@ -47,6 +47,11 @@
           <button type="button" class="capa-card" id="abrirResultadosCapa" data-capa-grupo="capaGrupoRes">
             <strong>Resultados</strong>
             <span>Consulta do relatório da turma, com login da escola.</span>
+            <span class="capa-btn">Abrir</span>
+          </button>
+          <button type="button" class="capa-card" id="abrirMaterialCapa" data-capa-grupo="capaGrupoMaterial">
+            <strong>Material pedagógico</strong>
+            <span>Apostilas SME e banco de questões, com login.</span>
             <span class="capa-btn">Abrir</span>
           </button>
         </div>
@@ -189,6 +194,45 @@
             <span class="capa-btn">Abrir</span>
           </button>
         </div>
+      </div>
+
+      <div class="capa-palco capa-grupo" id="capaGrupoMaterial" hidden>
+        <button type="button" class="capa-voltar" data-capa-voltar="capaCinco">Voltar</button>
+        <p class="capa-secretaria">Material pedagógico</p>
+        <form id="matLogin" class="res-card eixo-login" autocomplete="on" novalidate>
+          <h2>Material pedagógico</h2>
+          <p>Informe o login e a senha.</p>
+          <label>Login
+            <input id="matLoginCampo" name="username" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" />
+          </label>
+          <label>Senha
+            <input id="matSenhaCampo" name="password" type="password" autocomplete="current-password" />
+          </label>
+          <p id="matErro" class="res-erro" role="alert" aria-live="polite"></p>
+          <button type="submit" class="capa-btn">Entrar</button>
+        </form>
+        <div id="matOpcoes" hidden>
+          <div class="eixo-sai">
+            <button type="button" id="matSair" class="capa-btn">Sair</button>
+          </div>
+          <div class="capa-cinco">
+            <button type="button" class="capa-card" id="matApostilas">
+              <strong>Apostilas SME</strong>
+              <span>Material da Secretaria Municipal de Educação.</span>
+              <span class="capa-btn">Abrir</span>
+            </button>
+            <button type="button" class="capa-card" id="matBanco">
+              <strong>Banco de questões</strong>
+              <span>Questões para a avaliação.</span>
+              <span class="capa-btn">Abrir</span>
+            </button>
+          </div>
+        </div>
+        <section id="matPagina" class="mat-pagina" hidden>
+          <button type="button" id="matPaginaVoltar" class="capa-voltar">Voltar</button>
+          <h2 id="matPaginaTitulo"></h2>
+          <p id="matPaginaTexto"></p>
+        </section>
       </div>
 
       <div class="capa-palco capa-grupo" id="capaGrupoRes" hidden>
@@ -1383,9 +1427,9 @@
   <script src="dados_consulta_aval_2ano.js"></script>
   <script src="dados_consulta_aval_5ano.js"></script>
   <script src="habilidades.js"></script>
-  <script src="acesso.js?v=eixo30"></script>
+  <script src="acesso.js?v=eixo48"></script>
   <script src="eixo-login.js?v=eixo38"></script>
   <script src="app.js?v=eixo26"></script>
-  <script src="resultados.js?v=eixo47"></script>
+  <script src="resultados.js?v=eixo48"></script>
 </body>
 </html>
