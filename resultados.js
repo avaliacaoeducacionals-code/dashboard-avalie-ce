@@ -1128,6 +1128,7 @@
     const abrir = $("abrirResultadosCapa");
     if (abrir) abrir.addEventListener("click", pedirSenha);
     ligarMaterial();
+    ligarLeitura();
     mostrarLogin();
   }
 
@@ -1242,6 +1243,58 @@
     const voltar = $("matPaginaVoltar");
     if (voltar) voltar.addEventListener("click", mostrarOpcoesMaterial);
     mostrarLoginMaterial();
+  }
+
+  function pedirSenhaLeitura() {
+    try { sessionStorage.removeItem("avalie-leitura"); } catch (e) { /* pede a senha de novo */ }
+    if ($("leituraSenhaCampo")) $("leituraSenhaCampo").value = "";
+    if ($("leituraErro")) $("leituraErro").textContent = "";
+    if ($("leituraLogin")) $("leituraLogin").hidden = false;
+  }
+
+  async function entrarLeitura(ev) {
+    ev.preventDefault();
+    const loginEl = $("leituraLoginCampo");
+    const senhaEl = $("leituraSenhaCampo");
+    const erro = $("leituraErro");
+    const botao = ev.currentTarget.querySelector("button[type='submit']");
+    const login = loginEl ? loginEl.value.trim() : "";
+    const senha = senhaEl ? senhaEl.value.trim() : "";
+    if (erro) erro.textContent = "";
+    if (!login || !senha) {
+      if (erro) erro.textContent = "Informe o login e a senha.";
+      return;
+    }
+    if (botao) botao.disabled = true;
+    try {
+      const item = buscarLogin(login);
+      const hash = await hashSenha(senha);
+      const esperado = item && item.senhaHash ? String(item.senhaHash).toLowerCase() : "";
+      if (!item || hash !== esperado) {
+        if (erro) erro.textContent = "Login ou senha incorretos.";
+        return;
+      }
+      sessionStorage.setItem("avalie-leitura", JSON.stringify({
+        login: item.login,
+        escola: item.escola || "",
+        mestre: !!item.mestre,
+      }));
+      if (item.mestre && window.gravarSessaoMestre) window.gravarSessaoMestre(item.login);
+      if (senhaEl) senhaEl.value = "";
+      window.location.href = "leitura/index.html?v=leitura2";
+    } finally {
+      if (botao) botao.disabled = false;
+    }
+  }
+
+  function ligarLeitura() {
+    const form = $("leituraLogin");
+    if (!form || form.dataset.ligado) return;
+    form.dataset.ligado = "1";
+    form.addEventListener("submit", entrarLeitura);
+    const abrir = $("abrirLeituraCapa");
+    if (abrir) abrir.addEventListener("click", pedirSenhaLeitura);
+    pedirSenhaLeitura();
   }
 
     window.addEventListener("storage", (ev) => {

@@ -54,6 +54,11 @@
             <span>Apostilas SME e banco de questões, com login.</span>
             <span class="capa-btn">Abrir</span>
           </button>
+          <button type="button" class="capa-card" id="abrirLeituraCapa" data-capa-grupo="capaGrupoLeitura">
+            <strong>Teste de leitura e escrita</strong>
+            <span>Painel de leitura e escrita, com login.</span>
+            <span class="capa-btn">Abrir</span>
+          </button>
         </div>
       </div>
 
@@ -233,6 +238,23 @@
           <h2 id="matPaginaTitulo"></h2>
           <p id="matPaginaTexto"></p>
         </section>
+      </div>
+
+      <div class="capa-palco capa-grupo" id="capaGrupoLeitura" hidden>
+        <button type="button" class="capa-voltar" data-capa-voltar="capaCinco">Voltar</button>
+        <p class="capa-secretaria">Teste de leitura e escrita</p>
+        <form id="leituraLogin" class="res-card eixo-login" autocomplete="on" novalidate>
+          <h2>Teste de leitura e escrita</h2>
+          <p>Informe o login e a senha.</p>
+          <label>Login
+            <input id="leituraLoginCampo" name="username" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" />
+          </label>
+          <label>Senha
+            <input id="leituraSenhaCampo" name="password" type="password" autocomplete="current-password" />
+          </label>
+          <p id="leituraErro" class="res-erro" role="alert" aria-live="polite"></p>
+          <button type="submit" class="capa-btn">Entrar</button>
+        </form>
       </div>
 
       <div class="capa-palco capa-grupo" id="capaGrupoRes" hidden>
@@ -1430,6 +1452,6 @@
   <script src="acesso.js?v=eixo48"></script>
   <script src="eixo-login.js?v=eixo38"></script>
   <script src="app.js?v=eixo26"></script>
-  <script src="resultados.js?v=eixo48"></script>
+  <script src="resultados.js?v=eixo49"></script>
 </body>
 </html>

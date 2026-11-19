@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Painel de Leitura e Escrita</title>
+  <link rel="stylesheet" href="style.css?v=teste-seletor">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="marca">
+        <img class="marca-logo" src="logo-eixo.png" alt="Eixo de Avaliação">
+        <div>
+          <strong>Leitura e Escrita</strong>
+          <span id="marca-turma">Turma</span>
+        </div>
+      </div>
+      <nav class="menu" aria-label="Seções">
+        <button type="button" data-view="painel" class="ativo">Painel</button>
+        <button type="button" data-view="leitura">Lançar leitura</button>
+        <button type="button" data-view="escrita">Lançar escrita</button>
+        <button type="button" data-view="alunos">Alunos e turma</button>
+        <button type="button" data-view="relatorio">Relatório</button>
+      </nav>
+      <p class="sidebar-nota">Os lançamentos ficam neste navegador. <a href="../index.html">Voltar à capa</a>.</p>
+    </aside>
+    <main>
+      <header class="topo">
+        <div class="topo-linha">
+          <div>
+            <p class="sobre-titulo" id="topo-escola">Escola</p>
+            <h1 id="topo-titulo">Painel</h1>
+          </div>
+          <div class="topo-acoes">
+            <span id="aviso-salvar" class="aviso-salvar" role="status"></span>
+            <button type="button" id="btn-imprimir-topo" class="btn">Imprimir relatório</button>
+            <button type="button" id="btn-backup" class="btn btn-claro">Baixar cópia</button>
+          </div>
+        </div>
+        <div class="seletores">
+          <label class="campo">Escola
+            <select id="sel-escola"></select>
+          </label>
+          <label class="campo">Ano
+            <select id="sel-ano"></select>
+          </label>
+          <label class="campo">Turma
+            <select id="sel-turma"></select>
+          </label>
+          <label class="campo">Teste
+            <select id="sel-teste"></select>
+          </label>
+        </div>
+        <p id="dica-escopo" class="nota dica-escopo" hidden></p>
+      </header>
+      <section id="view-painel" class="view"></section>
+      <section id="view-leitura" class="view oculto"></section>
+      <section id="view-escrita" class="view oculto"></section>
+      <section id="view-alunos" class="view oculto"></section>
+      <section id="view-relatorio" class="view oculto"></section>
+    </main>
+  </div>
+  <script>
+    try {
+      var sessaoLeitura = JSON.parse(sessionStorage.getItem("avalie-leitura") || "null");
+      if (!sessaoLeitura || !sessaoLeitura.login) location.replace("../index.html");
+    } catch (e) {
+      location.replace("../index.html");
+    }
+  </script>
+  <script src="leitura-base.js"></script>
+  <script src="app.js?v=leitura2"></script>
+</body>
+</html>
